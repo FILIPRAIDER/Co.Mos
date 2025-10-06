@@ -1,9 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function WelcomePage() {
+  const router = useRouter();
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleStart = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      router.push("/auth/login");
+    }, 180);
+  };
+
   return (
     <main
       className="
@@ -22,6 +34,15 @@ export default function WelcomePage() {
           bg-gradient-to-br from-amber-400 via-red-500 to-neutral-950
         "
       />
+
+      {isTransitioning && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black transition-opacity duration-150 ease-out">
+          <div className="flex flex-col items-center gap-3">
+            <Image src="/Logo.svg" alt="co.mos" width={64} height={64} />
+            <span className="text-white text-2xl font-semibold tracking-wide">co.mos</span>
+          </div>
+        </div>
+      )}
 
       {/* Marca arriba a la izquierda */}
       <div className="absolute left-4 top-4 md:left-6 md:top-6 flex items-center gap-2">
@@ -44,18 +65,20 @@ export default function WelcomePage() {
 
         {/* CTA */}
         <div className="mt-6">
-          {/* Ajusta el href según tu flujo (ej. /menu, /scan, etc.) */}
-          <Link
-            href="/"
+          <button
+            type="button"
+            onClick={handleStart}
+            disabled={isTransitioning}
             className="
               block w-full text-center
               bg-white text-black font-medium
               py-3 rounded-md
               transition-opacity hover:opacity-90
+              disabled:opacity-60 disabled:cursor-not-allowed
             "
           >
             Empezar
-          </Link>
+          </button>
 
           <p className="mt-3 text-center text-xs text-neutral-300">
             Al continuar aceptas nuestros <span className="underline">Términos y Condiciones</span>
