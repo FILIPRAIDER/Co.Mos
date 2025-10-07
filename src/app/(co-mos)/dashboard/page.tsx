@@ -1,57 +1,29 @@
 "use client";
 
-import { useMemo, type ComponentType, type SVGProps } from "react";
+import { useMemo, useState, useEffect, type ComponentType, type SVGProps } from "react";
 import { useSession } from "next-auth/react";
+import { MoreVertical, Plus, Edit, Table2, XCircle, RefreshCw } from "lucide-react";
+import Link from "next/link";
 
 type TableStatus = "disponible" | "preparacion" | "entrega" | "atencion";
+type OrderStatus = "PENDING" | "PREPARING" | "READY" | "DELIVERED" | "PAID" | "CANCELLED";
 
-const stats = [
-	{
-		label: "Mesas Ocupadas",
-		value: "4",
-		helper: "Salón principal",
-		accent: "bg-emerald-400/20 text-emerald-300",
-		icon: TablesIcon,
-	},
-	{
-		label: "Pedidos en Curso",
-		value: "6",
-		helper: "Hoy",
-		accent: "bg-amber-400/20 text-amber-300",
-		icon: OrdersIcon,
-	},
-	{
-		label: "Propinas Recibidas",
-		value: "$275.256,78",
-		helper: "Semana actual",
-		accent: "bg-emerald-400/20 text-emerald-300",
-		icon: TipsIcon,
-	},
-	{
-		label: "Ingreso Diario",
-		value: "$275.256,78",
-		helper: "Actualizado 10 min",
-		accent: "bg-sky-400/20 text-sky-300",
-		icon: RevenueIcon,
-	},
-];
-
-const tables: Array<{
+type TableData = {
+	id: string;
 	number: number;
-	status: TableStatus;
-	orders: string[];
-}> = [
-	{ number: 1, status: "disponible", orders: [] },
-	{ number: 2, status: "preparacion", orders: ["2 Hamburguesas Doble Queso", "1 Coca Cola 400ml"] },
-	{ number: 3, status: "disponible", orders: [] },
-	{ number: 4, status: "disponible", orders: [] },
-	{ number: 5, status: "entrega", orders: ["2 Hamburguesas Doble Queso", "1 Coca Cola 400ml"] },
-	{ number: 6, status: "entrega", orders: ["2 Hamburguesas Doble Queso", "1 Coca Cola 400ml"] },
-	{ number: 7, status: "disponible", orders: [] },
-	{ number: 8, status: "disponible", orders: [] },
-	{ number: 9, status: "atencion", orders: ["2 Hamburguesas Doble Queso", "1 Coca Cola 400ml"] },
-	{ number: 10, status: "atencion", orders: [] },
-];
+	capacity: number;
+	available: boolean;
+	orders?: Array<{
+		id: string;
+		status: OrderStatus;
+		items: Array<{
+			quantity: number;
+			product: {
+				name: string;
+			};
+		}>;
+	}>;
+};
 
 const statusStyles: Record<TableStatus, { bar: string; label: string; text: string }> = {
 	disponible: {
@@ -80,48 +52,163 @@ type IconProps = SVGProps<SVGSVGElement>;
 
 export default function DashboardPage() {
 	const { data: session } = useSession();
+	const [openDropdown, setOpenDropdown] = useState<number | null>(null);
+	const [tables, setTables] = useState<TableData[]>([]);
+	const [orders, setOrders] = useState<any[]>([]);
+	const [loading, setLoading] = useState(true);
 
-	const firstName = useMemo(() => {
-		const full = session?.user?.name?.trim();
-		if (!full) return "equipo";
-		const [name] = full.split(" ");
-		return name || "equipo";
-	}, [session?.user?.name]);
+	useEffect(() => {
+		fetchData();
+		// Refrescar cada 30 segundos
+		const interval = setInterval(fetchData, 30000);
+		return () => clearInterval(interval);
+	}, []);
+
+	const fetchData = async () => {
+		try {
+			const [tablesRes, ordersRes] = await Promise.all([
+				fetch('/api/tables'),
+				fetch('/api/orders')
+			]);
+			
+			if (tablesRes.ok && ordersRes.ok) {
+				const tablesData = await tablesRes.json();
+				const ordersData = await ordersRes.json();
+				setTables(tablesData);
+				setOrders(ordersData);
+			}
+		} catch (error) {
+			console.error('Error fetching data:', error);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const getTableStatus = (table: TableData): TableStatus => {
+		const activeOrders = orders.filter(
+			order => order.tableId === table.id && 
+			order.status !== 'PAID' && 
+			order.status !== 'CANCELLED'
+		);
+
+		if (activeOrders.length === 0) return "disponible";
+		
+		const hasReady = activeOrders.some(o => o.status === 'READY');
+		if (hasReady) return "entrega";
+		
+		const hasPreparing = activeOrders.some(o => o.status === 'PREPARING');
+		if (hasPreparing) return "preparacion";
+		
+		const hasDelivered = activeOrders.some(o => o.status === 'DELIVERED');
+		if (hasDelivered) return "atencion";
+		
+		return "preparacion";
+	};
+
+	const getTableOrders = (table: TableData) => {
+		return orders.filter(
+			order => order.tableId === table.id && 
+			order.status !== 'PAID' && 
+			order.status !== 'CANCELLED'
+		);
+	};
+
+	const stats = useMemo(() => {
+		const occupiedTables = tables.filter(t => {
+			const tableOrders = orders.filter(
+				o => o.tableId === t.id && o.status !== 'PAID' && o.status !== 'CANCELLED'
+			);
+			return tableOrders.length > 0;
+		}).length;
+
+		const activeOrders = orders.filter(
+			o => o.status !== 'PAID' && o.status !== 'CANCELLED'
+		).length;
+
+		const totalRevenue = orders
+			.filter(o => o.status === 'PAID')
+			.reduce((sum, o) => sum + o.total, 0);
+
+		const totalTips = orders
+			.filter(o => o.status === 'PAID')
+			.reduce((sum, o) => sum + (o.tip || 0), 0);
+
+		return [
+			{
+				label: "Mesas Ocupadas",
+				value: occupiedTables.toString(),
+				helper: "Salón principal",
+				accent: "bg-emerald-400/20 text-emerald-300",
+				icon: TablesIcon,
+			},
+			{
+				label: "Pedidos en Curso",
+				value: activeOrders.toString(),
+				helper: "Hoy",
+				accent: "bg-amber-400/20 text-amber-300",
+				icon: OrdersIcon,
+			},
+			{
+				label: "Propinas Recibidas",
+				value: `$${totalTips.toLocaleString()}`,
+				helper: "Semana actual",
+				accent: "bg-emerald-400/20 text-emerald-300",
+				icon: TipsIcon,
+			},
+			{
+				label: "Ingreso Diario",
+				value: `$${totalRevenue.toLocaleString()}`,
+				helper: "Actualizado ahora",
+				accent: "bg-sky-400/20 text-sky-300",
+				icon: RevenueIcon,
+			},
+		];
+	}, [tables, orders]);
+
+	const toggleDropdown = (tableNumber: number) => {
+		setOpenDropdown(openDropdown === tableNumber ? null : tableNumber);
+	};
+
+	const closeDropdown = () => setOpenDropdown(null);
+
+	const handleLiftTable = async (tableId: string) => {
+		try {
+			await fetch('/api/tables', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id: tableId, available: true }),
+			});
+			fetchData();
+			closeDropdown();
+		} catch (error) {
+			console.error('Error lifting table:', error);
+		}
+	};
+
+	if (loading) {
+		return (
+			<div className="flex items-center justify-center min-h-[400px]">
+				<RefreshCw className="h-8 w-8 animate-spin text-orange-500" />
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-8">
-			<section className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_40px_-24px_rgba(0,0,0,0.7)] backdrop-blur">
-				<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-					<div>
-						<h2 className="text-2xl font-semibold text-white">Hola, {firstName} 👋</h2>
-						<p className="mt-1 text-sm text-white/60">
-							Monitorea tus mesas, pedidos y métricas clave en tiempo real para mantener el servicio al máximo.
-						</p>
-					</div>
-					<div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
-						<QuickAction icon={OrdersIcon} label="Ver órdenes" />
-						<QuickAction icon={TablesIcon} label="Mesas" />
-						<QuickAction icon={ReportIcon} label="Reportes" />
-					</div>
-				</div>
-			</section>
-
 			<section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				{stats.map((stat) => (
 					<article
 						key={stat.label}
-						className="flex flex-col justify-between rounded-2xl border border-white/10 bg-black/50 p-5 shadow-[0_20px_40px_-32px_rgba(0,0,0,0.8)]"
+						className="flex flex-col justify-between h-28 rounded-lg border border-white/10 bg-[#1a1a1f] p-2 px-2"
 					>
 						<div className="flex items-center justify-between">
+							<p className="text-sm tracking-widest text-white/50">{stat.label}</p>
 							<div className={`rounded-full p-2 ${stat.accent}`}>
 								<stat.icon className="h-5 w-5" />
 							</div>
-							<BadgeIcon className="h-5 w-5 text-white/20" />
 						</div>
-						<div className="mt-6 space-y-2">
-							<p className="text-sm uppercase tracking-widest text-white/50">{stat.label}</p>
-							<p className="text-3xl font-semibold text-white">{stat.value}</p>
-							<p className="text-xs text-white/40">{stat.helper}</p>
+						<div className="space-y-2">
+							<p className="text-3xl font-medium text-white">{stat.value}</p>
 						</div>
 					</article>
 				))}
@@ -131,57 +218,126 @@ export default function DashboardPage() {
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h3 className="text-lg font-semibold text-white">Estado de mesas</h3>
-						<p className="text-sm text-white/50">Actualiza en tiempo real las solicitudes de cada mesa.</p>
 					</div>
-					<button
-						type="button"
-						className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-1.5 text-sm text-white/70 transition hover:border-white/30 hover:bg-white/10"
-					>
-						<FilterIcon className="h-4 w-4" />
-						Filtrar
-					</button>
 				</div>
 
 				<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
 					{tables.map((table) => {
-						const styles = statusStyles[table.status];
+						const status = getTableStatus(table);
+						const styles = statusStyles[status];
+						const tableOrders = getTableOrders(table);
+						const isOpen = openDropdown === table.number;
+						
 						return (
 							<article
 								key={`mesa-${table.number}`}
-								className="flex h-full flex-col rounded-2xl border border-white/10 bg-black/40 p-4 shadow-[0_20px_50px_-36px_rgba(0,0,0,0.85)]"
+								className="relative flex h-[280px] flex-col rounded-lg border border-white/10 bg-[#1a1a1f] p-4"
 							>
 								<header className="flex items-start justify-between">
 									<div>
 										<p className="font-serif text-xl text-white italic">Mesa #{table.number}</p>
+										<p className="text-xs text-white/40 mt-1">{table.capacity} personas</p>
 									</div>
-									<button
-										type="button"
-										className="rounded-md p-1 text-white/40 transition hover:bg-white/10 hover:text-white"
-										aria-label="Opciones"
-									>
-										<KebabIcon className="h-4 w-4" />
-									</button>
+									<div className="relative">
+										<button
+											type="button"
+											onClick={() => toggleDropdown(table.number)}
+											className="rounded-md p-1 text-white/40 transition hover:bg-white/10 hover:text-white"
+											aria-label="Opciones"
+										>
+											<MoreVertical className="h-4 w-4" />
+										</button>
+										
+										{isOpen && (
+											<>
+												<div 
+													className="fixed inset-0 z-10" 
+													onClick={closeDropdown}
+													aria-hidden="true"
+												/>
+												<div className="absolute right-0 top-8 z-20 w-48 rounded-lg border border-white/10 bg-[#0f0f15] shadow-xl">
+													<div className="py-1">
+														<Link
+															href={`/dashboard/ordenes?mesa=${table.number}`}
+															className="flex items-center gap-3 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+															onClick={closeDropdown}
+														>
+															<Plus className="h-4 w-4" />
+															Generar Pedido
+														</Link>
+														<button
+															type="button"
+															className="flex w-full items-center gap-3 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+															onClick={closeDropdown}
+														>
+															<Edit className="h-4 w-4" />
+															Editar Pedido
+														</button>
+														<button
+															type="button"
+															onClick={() => handleLiftTable(table.id)}
+															className="flex w-full items-center gap-3 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+														>
+															<Table2 className="h-4 w-4" />
+															Levantar Mesa
+														</button>
+														<button
+															type="button"
+															className="flex w-full items-center gap-3 px-4 py-2 text-sm text-rose-400 transition hover:bg-white/10"
+															onClick={closeDropdown}
+														>
+															<XCircle className="h-4 w-4" />
+															Cancelar Pedido
+														</button>
+													</div>
+												</div>
+											</>
+										)}
+									</div>
 								</header>
 
-								<div className="mt-3 flex-1">
-									{table.orders.length > 0 ? (
-										<ul className="space-y-1 text-sm text-white/70">
-											{table.orders.map((order, index) => (
-												<li key={`${table.number}-order-${index}`} className="leading-relaxed">
-													{order}
-												</li>
+								<div className="mt-3 flex-1 overflow-y-auto">
+									{tableOrders.length > 0 ? (
+										<div className="space-y-2">
+											{tableOrders.map((order: any) => (
+												<div key={order.id} className="rounded-lg bg-white/5 p-2">
+													<p className="text-xs text-white/40 mb-1">Orden #{order.orderNumber}</p>
+													<ul className="space-y-1 text-sm text-white/70">
+														{order.items?.map((item: any, idx: number) => (
+															<li key={idx} className="leading-relaxed">
+																{item.quantity}x {item.product?.name || 'Producto'}
+															</li>
+														))}
+													</ul>
+													<div className="mt-2 flex items-center justify-between">
+														<span className="text-xs text-orange-500 font-medium">
+															${order.total?.toLocaleString()}
+														</span>
+														<span className={`text-xs px-2 py-0.5 rounded-full ${
+															order.status === 'PENDING' ? 'bg-yellow-500/20 text-yellow-300' :
+															order.status === 'PREPARING' ? 'bg-blue-500/20 text-blue-300' :
+															order.status === 'READY' ? 'bg-green-500/20 text-green-300' :
+															'bg-white/10 text-white/60'
+														}`}>
+															{order.status === 'PENDING' ? 'Pendiente' :
+															 order.status === 'PREPARING' ? 'Preparando' :
+															 order.status === 'READY' ? 'Listo' :
+															 order.status === 'DELIVERED' ? 'Entregado' : order.status}
+														</span>
+													</div>
+												</div>
 											))}
-										</ul>
+										</div>
 									) : (
 										<p className="text-sm text-white/25">Sin pedidos en curso.</p>
 									)}
 								</div>
 
-								<div className="mt-4 flex items-center justify-between">
-									<span className={`text-xs font-semibold uppercase tracking-widest ${styles.label}`}>
+								<div className="mt-4 space-y-2">
+									<span className={`text-xs font-semibold uppercase tracking-widest ${styles.label} block`}>
 										{styles.text}
 									</span>
-									<div className={`h-2 w-20 rounded-full ${styles.bar}`} />
+									<div className={`h-2 w-full rounded-full ${styles.bar}`} />
 								</div>
 							</article>
 						);
@@ -225,8 +381,8 @@ function OrdersIcon(props: IconProps) {
 function TipsIcon(props: IconProps) {
 	return (
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
-			<path d="M12 3a6 6 0 0 0-6 6c0 2.22 1.17 4.17 3 5.23V17a3 3 0 0 0 6 0v-2.77c1.83-1.06 3-3.01 3-5.23a6 6 0 0 0-6-6z" strokeLinecap="round" strokeLinejoin="round" />
-			<path d="M10 21h4" strokeLinecap="round" />
+			<path d="M12 3v18" strokeLinecap="round" />
+			<path d="M16 7.5c0-1.971-1.79-3.5-4-3.5s-4 1.529-4 3.5S8.79 11 11 11h2c2.21 0 4 1.529 4 3.5S14.21 18 12 18s-4-1.529-4-3.5" strokeLinecap="round" strokeLinejoin="round" />
 		</svg>
 	);
 }
@@ -234,34 +390,9 @@ function TipsIcon(props: IconProps) {
 function RevenueIcon(props: IconProps) {
 	return (
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
-			<path d="M5 12.5 9.5 17 19 7" strokeLinecap="round" strokeLinejoin="round" />
-			<path d="M5 19h14" strokeLinecap="round" />
-		</svg>
-	);
-}
-
-function ReportIcon(props: IconProps) {
-	return (
-		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
-			<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" strokeLinecap="round" strokeLinejoin="round" />
-			<path d="M12 3v5h5" strokeLinecap="round" strokeLinejoin="round" />
-			<path d="M9 13h6M9 17h4M9 9h1" strokeLinecap="round" />
-		</svg>
-	);
-}
-
-function BadgeIcon(props: IconProps) {
-	return (
-		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
-			<circle cx="12" cy="12" r="8" strokeDasharray="2 3" strokeLinecap="round" />
-		</svg>
-	);
-}
-
-function FilterIcon(props: IconProps) {
-	return (
-		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
-			<path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
+			<path d="M4 18h16M4 6h16" strokeLinecap="round" />
+			<path d="M7 14V6h10v8c0 2.21-1.79 4-4 4h-2c-2.21 0-4-1.79-4-4Z" strokeLinecap="round" strokeLinejoin="round" />
+			<path d="M10 10h4" strokeLinecap="round" />
 		</svg>
 	);
 }
@@ -275,3 +406,4 @@ function KebabIcon(props: IconProps) {
 		</svg>
 	);
 }
+

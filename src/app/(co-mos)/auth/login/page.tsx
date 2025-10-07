@@ -4,11 +4,18 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Modal from "@/components/Modal";
 
 export default function LoginPage() {
   const [document, setDocument] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({ type: "success", title: "", message: "" });
   const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
@@ -21,8 +28,25 @@ export default function LoginPage() {
       callbackUrl: "/dashboard",
     });
     setLoading(false);
-    if (res?.ok) router.push("/dashboard");
-    else alert("Credenciales inválidas");
+    
+    if (res?.ok) {
+      setModalConfig({
+        type: "success",
+        title: "¡Bienvenido!",
+        message: "Has iniciado sesión exitosamente",
+      });
+      setShowModal(true);
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
+    } else {
+      setModalConfig({
+        type: "error",
+        title: "Error de autenticación",
+        message: "Las credenciales ingresadas no son válidas. Por favor verifica e intenta de nuevo.",
+      });
+      setShowModal(true);
+    }
   }
 
   return (
@@ -76,6 +100,14 @@ export default function LoginPage() {
           </a>
         </p>
       </div>
+
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+      />
     </main>
   );
 }

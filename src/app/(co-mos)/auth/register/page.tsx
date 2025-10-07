@@ -3,12 +3,19 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Modal from "@/components/Modal";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [document, setDocument] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({ type: "success", title: "", message: "" });
   const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
@@ -22,11 +29,23 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (res.ok) {
-      alert("Cuenta creada. Ya puedes iniciar sesión.");
-      router.push("/auth/login");
+      setModalConfig({
+        type: "success",
+        title: "¡Cuenta creada exitosamente!",
+        message: "Tu cuenta ha sido creada. Ya puedes iniciar sesión con tus credenciales.",
+      });
+      setShowModal(true);
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 2000);
     } else {
       const j = await res.json().catch(() => ({}));
-      alert(j?.message ?? "No se pudo registrar");
+      setModalConfig({
+        type: "error",
+        title: "Error al registrar",
+        message: j?.message ?? "No se pudo completar el registro. Por favor intenta de nuevo.",
+      });
+      setShowModal(true);
     }
   }
 
@@ -92,6 +111,14 @@ export default function RegisterPage() {
           </a>
         </p>
       </div>
+
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+      />
     </main>
   );
 }

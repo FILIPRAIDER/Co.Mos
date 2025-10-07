@@ -12,7 +12,7 @@ export default function WelcomePage() {
     if (isTransitioning) return;
     setIsTransitioning(true);
     setTimeout(() => {
-      router.push("/auth/login");
+      router.push("/menu");
     }, 180);
   };
 

@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useMemo, useState, type ReactNode, type SVGProps } from "react";
+import { useMemo, useState, useEffect, type ReactNode, type SVGProps } from "react";
+import Image from "next/image";
 
 const navGroups = [
   {
     label: "Dashboards",
     items: [
       { label: "Inicio", href: "/dashboard", icon: HomeIcon },
-      { label: "Órdenes", icon: ClipboardIcon },
+      { label: "Órdenes", href: "/dashboard/ordenes", icon: ClipboardIcon },
       { label: "Mesas", icon: TableIcon },
       { label: "Reportes", icon: ChartIcon },
     ],
@@ -20,6 +21,13 @@ const navGroups = [
     items: [{ label: "Productos", icon: BoxIcon }],
   },
 ];
+
+// Traducción de roles
+const roleTranslations: Record<string, string> = {
+  ADMIN: "Administrador",
+  WORKER: "Trabajador",
+  CLIENT: "Cliente",
+};
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -31,6 +39,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const firstName = useMemo(() => {
     const full = session?.user?.name?.trim();
@@ -39,22 +49,62 @@ export function DashboardShell({ children }: DashboardShellProps) {
     return name || "equipo";
   }, [session?.user?.name]);
 
-  const roleLabel = session?.user?.role ?? "Sin rol";
+  const roleLabel = useMemo(() => {
+    const role = session?.user?.role;
+    if (!role) return "Sin rol";
+    return roleTranslations[role] || role;
+  }, [session?.user?.role]);
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
   };
 
-  const closeMobile = () => setMobileOpen(false);
+  const openMobile = () => {
+    setMobileOpen(true);
+    setTimeout(() => setIsAnimating(true), 10);
+  };
+
+  const closeMobile = () => {
+    setIsAnimating(false);
+    setTimeout(() => setMobileOpen(false), 300);
+  };
+
+  // Bloquear scroll cuando el menú móvil está abierto
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileOpen]);
 
   return (
     <div className="flex min-h-dvh bg-[#0a0a0f] text-neutral-100">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-white/5 bg-black/60 px-4 py-6 backdrop-blur lg:flex lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto">
-        <BrandBlock />
+      <aside 
+        className={`hidden shrink-0 flex-col border-r border-white/5 bg-[#1a1a1f] px-4 py-6 lg:flex lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto transition-all duration-300 ${
+          sidebarCollapsed ? "w-20" : "w-64"
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <BrandBlock collapsed={sidebarCollapsed} />
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="rounded-md p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+            aria-label={sidebarCollapsed ? "Expandir sidebar" : "Contraer sidebar"}
+          >
+            {sidebarCollapsed ? <ChevronRightIcon className="h-4 w-4" /> : <ChevronLeftIcon className="h-4 w-4" />}
+          </button>
+        </div>
         <nav className="mt-8 space-y-6">
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{group.label}</p>
+              {!sidebarCollapsed && (
+                <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{group.label}</p>
+              )}
               <ul className="space-y-1.5">
                 {group.items.map((item) => (
                   <li key={item.label}>
@@ -68,18 +118,23 @@ export function DashboardShell({ children }: DashboardShellProps) {
                               ? "bg-white/10 text-white"
                               : "text-white/60 hover:bg-white/5 hover:text-white"
                           }
+                          ${sidebarCollapsed ? "justify-center" : ""}
                         `}
+                        title={sidebarCollapsed ? item.label : undefined}
                       >
                         <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
+                        {!sidebarCollapsed && <span>{item.label}</span>}
                       </Link>
                     ) : (
                       <button
                         type="button"
-                        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/40 ring-0 transition-colors hover:bg-white/5 hover:text-white/80"
+                        className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/40 ring-0 transition-colors hover:bg-white/5 hover:text-white/80 ${
+                          sidebarCollapsed ? "justify-center" : ""
+                        }`}
+                        title={sidebarCollapsed ? item.label : undefined}
                       >
                         <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
+                        {!sidebarCollapsed && <span>{item.label}</span>}
                       </button>
                     )}
                   </li>
@@ -92,8 +147,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeMobile} aria-hidden="true" />
-          <div className="relative ml-0 flex h-full w-72 flex-col bg-[#0f0f15] px-4 py-6 shadow-xl">
+          <div 
+            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+              isAnimating ? 'opacity-100' : 'opacity-0'
+            }`}
+            onClick={closeMobile} 
+            aria-hidden="true" 
+          />
+          <div className={`relative ml-0 flex h-full w-72 flex-col bg-[#1a1a1f] px-4 py-6 shadow-xl transform transition-transform duration-300 ease-out ${
+            isAnimating ? 'translate-x-0' : '-translate-x-full'
+          }`}>
             <div className="flex items-center justify-between">
               <BrandBlock compact onClickLogo={closeMobile} />
               <button
@@ -148,11 +211,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
       )}
 
   <div className="flex min-h-dvh flex-1 flex-col lg:overflow-y-auto">
-        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-black/60 px-4 py-3 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/5 bg-[#1a1a1f] px-4 py-3 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setMobileOpen(true)}
+              onClick={openMobile}
               className="rounded-md p-2 text-white/70 transition hover:bg-white/10 hover:text-white lg:hidden"
               aria-label="Abrir menú"
             >
@@ -164,9 +227,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden text-right sm:block">
+            <div className="text-right">
               <p className="text-sm font-medium text-white">Hola, {firstName}</p>
-              <p className="text-xs uppercase tracking-wide text-white/50">{roleLabel}</p>
+              <p className="text-xs text-white/50">{roleLabel}</p>
             </div>
             <button
               type="button"
@@ -183,7 +246,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   );
 }
 
-function BrandBlock({ compact, onClickLogo }: { compact?: boolean; onClickLogo?: () => void }) {
+function BrandBlock({ compact, collapsed, onClickLogo }: { compact?: boolean; collapsed?: boolean; onClickLogo?: () => void }) {
   if (onClickLogo) {
     return (
       <button
@@ -192,18 +255,28 @@ function BrandBlock({ compact, onClickLogo }: { compact?: boolean; onClickLogo?:
         className="flex items-center gap-2 text-left"
         aria-label="Inicio co.mos"
       >
-        <LogoIcon className="h-6 w-6" />
-        {!compact && <span className="text-lg font-semibold text-white">co.mos</span>}
-        {compact && <span className="text-base font-semibold text-white">co.mos</span>}
+        {collapsed ? (
+          <Image src="/Logo.svg" alt="co.mos" width={24} height={24} className="shrink-0" />
+        ) : (
+          <>
+            <Image src="/Logo.svg" alt="co.mos" width={48} height={18} className="shrink-0" />
+            <span className="text-base font-semibold text-white">co.mos</span>
+          </>
+        )}
       </button>
     );
   }
 
   return (
     <div className="flex items-center gap-2" aria-label="co.mos">
-      <LogoIcon className="h-6 w-6" />
-      {!compact && <span className="text-lg font-semibold text-white">co.mos</span>}
-      {compact && <span className="text-base font-semibold text-white">co.mos</span>}
+      {collapsed ? (
+        <Image src="/Logo.svg" alt="co.mos" width={24} height={24} className="shrink-0" />
+      ) : (
+        <>
+          <Image src="/Logo.svg" alt="co.mos" width={48} height={18} className="shrink-0" />
+          <span className="text-base font-semibold text-white">co.mos</span>
+        </>
+      )}
     </div>
   );
 }
@@ -282,6 +355,22 @@ function BoxIcon(props: IconProps) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
       <path d="M12 3 4 7v10l8 4 8-4V7l-8-4z" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 12 20 8M12 12 4 8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
