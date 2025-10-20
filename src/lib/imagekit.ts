@@ -1,10 +1,10 @@
 import ImageKit from 'imagekit';
 
-// Configuración de ImageKit
+// Configuración de ImageKit usando variables de entorno
 export const imagekit = new ImageKit({
-  publicKey: 'public_2PLQoaigQapCg8Qiazira3M7hn0=',
-  privateKey: 'private_m1J8jm2B0iOYrJomR5NaQUEhOY8=',
-  urlEndpoint: 'https://ik.imagekit.io/ujhv2g173'
+  publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || '',
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || '',
+  urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || ''
 });
 
 /**
@@ -59,6 +59,7 @@ export function getOptimizedImageUrl(
   width?: number,
   height?: number
 ): string {
+  const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/ujhv2g173';
   const transformations: string[] = [];
   
   if (width) transformations.push(`w-${width}`);
@@ -67,5 +68,5 @@ export function getOptimizedImageUrl(
   transformations.push('f-auto'); // Formato automático (WebP si es soportado)
 
   const transformation = transformations.join(',');
-  return `https://ik.imagekit.io/ujhv2g173/tr:${transformation}/${path}`;
+  return `${urlEndpoint}/tr:${transformation}/${path}`;
 }
