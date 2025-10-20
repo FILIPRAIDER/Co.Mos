@@ -12,13 +12,23 @@ const navGroups = [
     items: [
       { label: "Inicio", href: "/dashboard", icon: HomeIcon },
       { label: "Órdenes", href: "/dashboard/ordenes", icon: ClipboardIcon },
-      { label: "Mesas", icon: TableIcon },
-      { label: "Reportes", icon: ChartIcon },
+      { label: "Mesas", href: "/dashboard/mesas", icon: TableIcon },
+      { label: "Reportes", href: "/dashboard/reportes", icon: ChartIcon },
     ],
   },
   {
     label: "Producto",
-    items: [{ label: "Productos", icon: BoxIcon }],
+    items: [
+      { label: "Productos", href: "/dashboard/productos", icon: BoxIcon },
+      { label: "Categorías", href: "/dashboard/categorias", icon: TagIcon },
+    ],
+  },
+  {
+    label: "Operaciones",
+    items: [
+      { label: "Vista Cocina", href: "/cocina", icon: ChefHatIcon },
+      { label: "Vista Servicio", href: "/servicio", icon: ServerIcon },
+    ],
   },
 ];
 
@@ -371,6 +381,35 @@ function ChevronRightIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
       <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TagIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="7" cy="7" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ChefHatIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 17h12" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ServerIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <rect x="2" y="3" width="20" height="7" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="2" y="14" width="20" height="7" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="6" cy="6.5" r="1" fill="currentColor" />
+      <circle cx="6" cy="17.5" r="1" fill="currentColor" />
     </svg>
   );
 }

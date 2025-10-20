@@ -195,11 +195,22 @@ export default function DashboardPage() {
 
 	return (
 		<div className="space-y-8">
+			{/* Auto refresh indicator */}
+			<div className="flex items-center justify-end">
+				<button 
+					onClick={fetchData}
+					className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300 transition"
+				>
+					<RefreshCw className="h-3 w-3" />
+					<span>Actualiza cada 30s</span>
+				</button>
+			</div>
+
 			{/* Quick Access for Admin */}
 			{session?.user?.role === "ADMIN" && (
-				<section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+				<section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 					<Link
-						href="/admin/mesas"
+						href="/dashboard/mesas"
 						className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 p-4 transition hover:from-orange-600 hover:to-red-600 active:scale-95"
 					>
 						<Table2 className="h-6 w-6" />
@@ -209,7 +220,7 @@ export default function DashboardPage() {
 						</div>
 					</Link>
 					<Link
-						href="/admin/productos"
+						href="/dashboard/productos"
 						className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 p-4 transition hover:from-yellow-600 hover:to-orange-600 active:scale-95"
 					>
 						<svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -226,7 +237,7 @@ export default function DashboardPage() {
 						className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 p-4 transition hover:from-blue-600 hover:to-purple-600 active:scale-95"
 					>
 						<svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-							<path d="M6 13.87A4 4 0 017.41 6a5.11 5.11 0 011.05-1.54 5 5 0 017.08 0A5.11 5.11 0 0116.59 6 4 4 0 0118 13.87V21H6z" />
+							<path d="M6 13.87A4 4 0 17.41 6a5.11 5.11 0 011.05-1.54 5 5 0 017.08 0A5.11 5.11 0 0116.59 6 4 4 0 0118 13.87V21H6z" />
 							<line x1="6" y1="17" x2="18" y2="17" />
 						</svg>
 						<div>
@@ -246,16 +257,6 @@ export default function DashboardPage() {
 							<p className="text-xs text-white/80">Órdenes listas</p>
 						</div>
 					</Link>
-					<button
-						onClick={fetchData}
-						className="flex items-center gap-3 rounded-xl bg-white/10 border border-white/20 p-4 transition hover:bg-white/20 active:scale-95"
-					>
-						<RefreshCw className="h-6 w-6" />
-						<div>
-							<p className="font-bold">Actualizar</p>
-							<p className="text-xs text-white/60">Refrescar datos</p>
-						</div>
-					</button>
 				</section>
 			)}
 
