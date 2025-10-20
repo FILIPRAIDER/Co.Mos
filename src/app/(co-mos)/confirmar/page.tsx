@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import Image from "next/image";
 import Modal from "@/components/Modal";
 
 type Product = {
@@ -142,8 +143,24 @@ export default function ConfirmarPage() {
               key={item.product.id}
               className="flex items-center gap-3 rounded-lg bg-[#1a1a1f] p-3"
             >
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-white/5">
-                <span className="text-3xl">🍔</span>
+              <div className="relative h-16 w-16 shrink-0 rounded-lg overflow-hidden">
+                {item.product.imageUrl ? (
+                  <Image
+                    src={item.product.imageUrl}
+                    alt={item.product.name}
+                    fill
+                    className="object-cover"
+                    sizes="64px"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+                    <svg className="h-8 w-8 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="9" cy="9" r="2" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                  </div>
+                )}
               </div>
 
               <div className="flex-1">

@@ -232,16 +232,28 @@ function MenuContent() {
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`flex shrink-0 flex-col items-center gap-2 rounded-lg p-3 transition ${
+              className={`flex shrink-0 flex-col items-center gap-2 rounded-lg p-3 transition min-w-[90px] ${
                 selectedCategory === category.id
                   ? "bg-orange-500"
                   : "bg-[#1a1a1f] hover:bg-[#252530]"
               }`}
             >
-              <div className="text-3xl">
-                {categoryEmojis[category.name] || "🍽️"}
-              </div>
-              <span className="text-xs font-medium">{category.name}</span>
+              {category.imageUrl ? (
+                <div className="relative h-10 w-10 rounded-full overflow-hidden">
+                  <Image
+                    src={category.imageUrl}
+                    alt={category.name}
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                  />
+                </div>
+              ) : (
+                <div className="text-3xl">
+                  {categoryEmojis[category.name] || "🍽️"}
+                </div>
+              )}
+              <span className="text-xs font-medium text-center">{category.name}</span>
             </button>
           ))}
         </div>
@@ -280,9 +292,25 @@ function MenuContent() {
                 >
                   <div 
                     onClick={() => router.push(`/producto/${product.id}`)}
-                    className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-white/5 cursor-pointer hover:bg-white/10 transition"
+                    className="relative h-24 w-24 shrink-0 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition"
                   >
-                    <span className="text-5xl">🍔</span>
+                    {product.imageUrl ? (
+                      <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="96px"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+                        <svg className="h-10 w-10 text-zinc-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <circle cx="9" cy="9" r="2" />
+                          <path d="M21 15l-5-5L5 21" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-1 flex-col justify-between">
@@ -379,6 +407,17 @@ function MenuContent() {
                     key={item.product.id}
                     className="flex items-center gap-3 rounded-lg bg-[#1a1a1f] p-3"
                   >
+                    {item.product.imageUrl && (
+                      <div className="relative h-12 w-12 shrink-0 rounded overflow-hidden">
+                        <Image
+                          src={item.product.imageUrl}
+                          alt={item.product.name}
+                          fill
+                          className="object-cover"
+                          sizes="48px"
+                        />
+                      </div>
+                    )}
                     <div className="flex-1">
                       <h4 className="font-medium text-white">{item.product.name}</h4>
                       <p className="text-sm text-orange-500">
