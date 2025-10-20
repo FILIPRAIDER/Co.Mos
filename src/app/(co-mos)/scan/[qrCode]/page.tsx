@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
+import { setRestaurantContext } from '@/lib/restaurant-context';
 
 export default function ScanPage() {
   const router = useRouter();
@@ -29,12 +30,17 @@ export default function ScanPage() {
 
         const data = await response.json();
         
-        // data contiene: { sessionCode, tableNumber, tableId }
+        // data contiene: { sessionCode, tableNumber, tableId, restaurantId, restaurantName, restaurantSlug }
         setTableNumber(data.tableNumber);
         
-        // Guardar sessionCode en localStorage
-        localStorage.setItem('sessionCode', data.sessionCode);
-        localStorage.setItem('tableNumber', data.tableNumber.toString());
+        // Guardar contexto del restaurante usando el helper
+        setRestaurantContext({
+          restaurantId: data.restaurantId,
+          restaurantName: data.restaurantName,
+          restaurantSlug: data.restaurantSlug,
+          sessionCode: data.sessionCode,
+          tableNumber: data.tableNumber,
+        });
         
         // Esperar 1.5s y redirigir al menú
         setTimeout(() => {

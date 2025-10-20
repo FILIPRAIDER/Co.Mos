@@ -13,10 +13,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Buscar mesa por QR code
+    // Buscar mesa por QR code (incluye restaurante)
     const table = await prisma.table.findUnique({
       where: { qrCode },
       include: {
+        restaurant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         sessions: {
           where: { active: true },
           orderBy: { createdAt: 'desc' },
@@ -39,6 +46,9 @@ export async function POST(request: Request) {
         sessionCode: activeSession.sessionCode,
         tableNumber: table.number,
         tableId: table.id,
+        restaurantId: table.restaurantId,
+        restaurantName: table.restaurant.name,
+        restaurantSlug: table.restaurant.slug,
         existing: true,
       });
     }
@@ -64,6 +74,9 @@ export async function POST(request: Request) {
       sessionCode: newSession.sessionCode,
       tableNumber: table.number,
       tableId: table.id,
+      restaurantId: table.restaurantId,
+      restaurantName: table.restaurant.name,
+      restaurantSlug: table.restaurant.slug,
       existing: false,
     });
   } catch (error) {

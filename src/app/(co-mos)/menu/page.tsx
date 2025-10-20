@@ -4,8 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, ShoppingCart, X } from "lucide-react";
+import { Search, ShoppingCart, X, AlertCircle } from "lucide-react";
 import Image from "next/image";
+import { hasValidRestaurantContext } from "@/lib/restaurant-context";
 
 type Category = {
   id: string;
@@ -52,28 +53,37 @@ function MenuContent() {
   const [showCart, setShowCart] = useState(false);
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
+  const [restaurantId, setRestaurantId] = useState<string | null>(null);
 
-  // Cargar sessionCode y tableNumber desde query params o localStorage
+  // Cargar sessionCode, tableNumber y restaurantId desde query params o localStorage
   useEffect(() => {
     const sessionFromUrl = searchParams.get('session');
     if (sessionFromUrl) {
       setSessionCode(sessionFromUrl);
       localStorage.setItem('sessionCode', sessionFromUrl);
       
-      // Obtener también el tableNumber del localStorage (fue guardado en el scan)
+      // Obtener también el tableNumber y restaurantId del localStorage (fueron guardados en el scan)
       const savedTableNumber = localStorage.getItem('tableNumber');
+      const savedRestaurantId = localStorage.getItem('restaurantId');
       if (savedTableNumber) {
         setTableNumber(parseInt(savedTableNumber));
+      }
+      if (savedRestaurantId) {
+        setRestaurantId(savedRestaurantId);
       }
     } else {
       // Intentar cargar desde localStorage
       const savedSession = localStorage.getItem('sessionCode');
       const savedTableNumber = localStorage.getItem('tableNumber');
+      const savedRestaurantId = localStorage.getItem('restaurantId');
       if (savedSession) {
         setSessionCode(savedSession);
       }
       if (savedTableNumber) {
         setTableNumber(parseInt(savedTableNumber));
+      }
+      if (savedRestaurantId) {
+        setRestaurantId(savedRestaurantId);
       }
     }
   }, [searchParams]);
@@ -179,6 +189,36 @@ function MenuContent() {
   };
 
   const currentCategory = categories.find(cat => cat.id === selectedCategory);
+
+  // Validar que el usuario haya escaneado un QR
+  if (!hasValidRestaurantContext() && typeof window !== 'undefined') {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
+        <AlertCircle className="h-16 w-16 text-orange-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Acceso No Autorizado</h2>
+        <p className="text-gray-400 text-center mb-6">
+          Debes escanear el código QR de tu mesa para acceder al menú
+        </p>
+        <button
+          onClick={() => router.push('/')}
+          className="rounded-lg bg-orange-500 px-6 py-3 font-semibold transition hover:bg-orange-600"
+        >
+          Volver al inicio
+        </button>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-sm text-white/60">Cargando menú...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white pb-24">
