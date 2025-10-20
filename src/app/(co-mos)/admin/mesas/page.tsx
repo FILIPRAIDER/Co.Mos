@@ -259,12 +259,12 @@ export default function AdminMesasPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white pb-6">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-orange-500 to-red-500 border-b border-white/10">
+      <header className="sticky top-0 z-40 bg-black border-b border-zinc-800">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => router.push("/dashboard")}
-              className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
+              className="rounded-full bg-zinc-900 border border-zinc-800 p-2 transition hover:bg-zinc-800"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -289,7 +289,7 @@ export default function AdminMesasPage() {
               
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
+                className="rounded-full bg-orange-500 p-2 transition hover:bg-orange-600"
               >
                 <Plus className="h-5 w-5" />
               </button>
@@ -512,7 +512,7 @@ export default function AdminMesasPage() {
               </button>
               <button
                 onClick={createTable}
-                className="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-4 py-3 font-semibold transition hover:from-orange-600 hover:to-red-600"
+                className="flex-1 rounded-xl bg-orange-500 px-4 py-3 font-semibold transition hover:bg-orange-600"
               >
                 Crear Mesa
               </button>
@@ -552,7 +552,7 @@ export default function AdminMesasPage() {
               </button>
               <button
                 onClick={() => downloadQR(selectedTable)}
-                className="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-4 py-3 font-semibold transition hover:from-orange-600 hover:to-red-600 flex items-center justify-center gap-2"
+                className="flex-1 rounded-xl bg-orange-500 px-4 py-3 font-semibold transition hover:bg-orange-600 flex items-center justify-center gap-2"
               >
                 <Download className="h-4 w-4" />
                 Descargar

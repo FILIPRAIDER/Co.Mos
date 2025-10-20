@@ -245,12 +245,12 @@ export default function AdminProductosPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white pb-6">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-orange-500 to-red-500 border-b border-white/10">
+      <header className="sticky top-0 z-40 bg-black border-b border-zinc-800">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => router.push("/dashboard")}
-              className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
+              className="rounded-full bg-zinc-900 border border-zinc-800 p-2 transition hover:bg-zinc-800"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -263,7 +263,7 @@ export default function AdminProductosPage() {
                 resetForm();
                 setShowModal(true);
               }}
-              className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
+              className="rounded-full bg-orange-500 p-2 transition hover:bg-orange-600"
             >
               <Plus className="h-5 w-5" />
             </button>
@@ -271,13 +271,13 @@ export default function AdminProductosPage() {
 
           {/* Search */}
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar productos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 px-10 py-2.5 text-sm placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="w-full rounded-xl bg-zinc-900 border border-zinc-800 px-10 py-2.5 text-sm placeholder:text-gray-500 focus:outline-none focus:border-zinc-700"
             />
           </div>
 
@@ -441,34 +441,34 @@ export default function AdminProductosPage() {
 
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Nombre *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
                   required
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Descripción
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-white focus:outline-none focus:border-orange-500 resize-none"
                 />
               </div>
 
               {/* Price */}
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Precio *
                 </label>
                 <input
@@ -476,23 +476,23 @@ export default function AdminProductosPage() {
                   step="0.01"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
                   required
                 />
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Categoría *
                 </label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
                 >
                   {CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
+                    <option key={cat.value} value={cat.value} className="bg-zinc-900 text-white">
                       {cat.label}
                     </option>
                   ))}

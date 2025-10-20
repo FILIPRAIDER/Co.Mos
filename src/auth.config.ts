@@ -10,15 +10,22 @@ export const authOptions: NextAuthOptions = {
     Credentials({
       name: "Credentials",
       credentials: {
-        document: { label: "Documento", type: "text" },
+        identifier: { label: "Cédula o Email", type: "text" },
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.document || !credentials?.password) return null;
+        if (!credentials?.identifier || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { document: credentials.document },
+        // Buscar por cédula o email
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { document: credentials.identifier },
+              { email: credentials.identifier },
+            ],
+          },
         });
+        
         if (!user) return null;
 
         const ok = await bcrypt.compare(credentials.password, user.passwordHash);
