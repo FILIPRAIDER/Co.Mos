@@ -135,12 +135,12 @@ export default function ServicioPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white pb-6">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-orange-500 to-red-500 border-b border-white/10">
+      <header className="sticky top-0 z-40 bg-black border-b border-zinc-800">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => router.push("/dashboard")}
-              className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
+              className="rounded-lg bg-zinc-900 border border-zinc-800 p-2 transition hover:border-zinc-700"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -148,7 +148,7 @@ export default function ServicioPage() {
               <Image src="/Logo.svg" alt="co.mos" width={32} height={32} />
               <span className="text-lg font-semibold">co.mos</span>
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1.5">
               <UtensilsCrossed className="h-4 w-4" />
               <span className="text-sm font-medium">Servicio</span>
             </div>
@@ -156,23 +156,23 @@ export default function ServicioPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 p-3">
+            <div className="rounded-lg bg-zinc-900 border border-zinc-800 p-3">
               <div className="flex items-center gap-1 mb-1">
-                <CheckCircle className="h-3 w-3 text-green-300" />
-                <span className="text-xs text-white/80">Listas</span>
+                <CheckCircle className="h-3 w-3 text-green-400" />
+                <span className="text-xs text-gray-400">Listas</span>
               </div>
               <p className="text-xl font-bold">{readyOrders.length}</p>
             </div>
-            <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 p-3">
+            <div className="rounded-lg bg-zinc-900 border border-zinc-800 p-3">
               <div className="flex items-center gap-1 mb-1">
-                <Clock className="h-3 w-3 text-blue-300" />
-                <span className="text-xs text-white/80">Entregadas</span>
+                <Clock className="h-3 w-3 text-blue-400" />
+                <span className="text-xs text-gray-400">Entregadas</span>
               </div>
               <p className="text-xl font-bold">{deliveredOrders.length}</p>
             </div>
-            <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 p-3">
+            <div className="rounded-lg bg-zinc-900 border border-zinc-800 p-3">
               <div className="flex items-center gap-1 mb-1">
-                <span className="text-xs text-white/80">🪑 Mesas</span>
+                <span className="text-xs text-gray-400">🪑 Mesas</span>
               </div>
               <p className="text-xl font-bold">{activeTables.length}</p>
             </div>
@@ -186,8 +186,8 @@ export default function ServicioPage() {
               onClick={() => setView("orders")}
               className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
                 view === "orders"
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white hover:bg-white/20"
+                  ? "bg-orange-500 text-white"
+                  : "bg-zinc-900 border border-zinc-800 text-white hover:border-zinc-700"
               }`}
             >
               Órdenes ({orders.length})
@@ -196,8 +196,8 @@ export default function ServicioPage() {
               onClick={() => setView("tables")}
               className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
                 view === "tables"
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white hover:bg-white/20"
+                  ? "bg-orange-500 text-white"
+                  : "bg-zinc-900 border border-zinc-800 text-white hover:border-zinc-700"
               }`}
             >
               Mesas ({activeTables.length})
@@ -220,10 +220,10 @@ export default function ServicioPage() {
               orders.map((order) => (
                 <div
                   key={order.id}
-                  className={`rounded-2xl border p-4 ${
+                  className={`rounded-lg border p-4 ${
                     order.status === "LISTA"
-                      ? "bg-green-500/10 border-green-500/30"
-                      : "bg-blue-500/10 border-blue-500/30"
+                      ? "bg-zinc-900 border-green-500"
+                      : "bg-zinc-900 border-blue-500"
                   }`}
                 >
                   {/* Order Header */}
@@ -232,21 +232,21 @@ export default function ServicioPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-lg font-bold">{order.orderNumber}</span>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          className={`rounded-lg px-2 py-0.5 text-xs font-medium ${
                             order.status === "LISTA"
-                              ? "bg-green-500/20 text-green-300"
-                              : "bg-blue-500/20 text-blue-300"
+                              ? "bg-green-500 text-white"
+                              : "bg-blue-500 text-white"
                           }`}
                         >
                           {order.status === "LISTA" ? "✅ Lista" : "🚶 Entregada"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-white/70">
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
                         <span>🪑 Mesa {order.table.number}</span>
                         <span>•</span>
                         <span>{order.customerName || "Cliente"}</span>
                       </div>
-                      <p className="text-xs text-white/50 mt-1">
+                      <p className="text-xs text-gray-500 mt-1">
                         {new Date(order.createdAt).toLocaleTimeString("es-CO", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -260,10 +260,10 @@ export default function ServicioPage() {
                     {order.items.map((item) => (
                       <div
                         key={item.id}
-                        className="rounded-lg bg-black/20 backdrop-blur-sm p-3"
+                        className="rounded-lg bg-zinc-800 border border-zinc-700 p-3"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold">
                             {item.quantity}
                           </span>
                           <span className="font-medium">{item.product.name}</span>
@@ -276,7 +276,7 @@ export default function ServicioPage() {
                   {order.status === "LISTA" && (
                     <button
                       onClick={() => updateOrderStatus(order.id, "ENTREGADA")}
-                      className="w-full rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-3 font-semibold transition hover:from-green-600 hover:to-emerald-600 flex items-center justify-center gap-2"
+                      className="w-full rounded-lg bg-green-500 px-4 py-3 font-semibold transition hover:bg-green-600 flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="h-4 w-4" />
                       Marcar como entregada
@@ -292,7 +292,7 @@ export default function ServicioPage() {
               <div className="py-12 text-center">
                 <div className="mb-4 text-6xl">🪑</div>
                 <p className="text-lg font-semibold mb-2">Sin mesas activas</p>
-                <p className="text-sm text-white/60">No hay mesas ocupadas en este momento</p>
+                <p className="text-sm text-gray-400">No hay mesas ocupadas en este momento</p>
               </div>
             ) : (
               activeTables.map((table) => {
@@ -302,16 +302,16 @@ export default function ServicioPage() {
                 return (
                   <div
                     key={table.id}
-                    className="rounded-2xl bg-[#1a1a1f] border border-white/10 p-4"
+                    className="rounded-lg bg-zinc-900 border border-zinc-800 p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h3 className="text-lg font-bold">Mesa {table.number}</h3>
                         {activeSession?.customerName && (
-                          <p className="text-sm text-white/60">{activeSession.customerName}</p>
+                          <p className="text-sm text-gray-400">{activeSession.customerName}</p>
                         )}
                       </div>
-                      <div className="rounded-full bg-orange-500/20 px-3 py-1">
+                      <div className="rounded-lg bg-orange-500/20 border border-orange-500/50 px-3 py-1">
                         <span className="text-sm font-medium text-orange-300">
                           {sessionOrders.length} {sessionOrders.length === 1 ? "orden" : "órdenes"}
                         </span>
@@ -323,19 +323,19 @@ export default function ServicioPage() {
                         {sessionOrders.map((order) => (
                           <div
                             key={order.id}
-                            className="rounded-lg bg-white/5 border border-white/10 p-2"
+                            className="rounded-lg bg-zinc-800 border border-zinc-700 p-2"
                           >
                             <div className="flex items-center justify-between text-sm">
                               <span className="font-medium">{order.orderNumber}</span>
                               <span
-                                className={`rounded-full px-2 py-0.5 text-xs ${
+                                className={`rounded-lg px-2 py-0.5 text-xs font-medium ${
                                   order.status === "PENDIENTE"
-                                    ? "bg-yellow-500/20 text-yellow-300"
+                                    ? "bg-yellow-500 text-black"
                                     : order.status === "PREPARANDO"
-                                    ? "bg-orange-500/20 text-orange-300"
+                                    ? "bg-orange-500 text-white"
                                     : order.status === "LISTA"
-                                    ? "bg-green-500/20 text-green-300"
-                                    : "bg-blue-500/20 text-blue-300"
+                                    ? "bg-green-500 text-white"
+                                    : "bg-blue-500 text-white"
                                 }`}
                               >
                                 {order.status}

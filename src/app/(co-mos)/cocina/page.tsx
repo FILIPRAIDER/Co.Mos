@@ -204,12 +204,12 @@ export default function CocinaPage() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-orange-500 to-red-500 border-b border-white/10">
+      <header className="sticky top-0 z-40 bg-black border-b border-zinc-800">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => router.push("/dashboard")}
-              className="rounded-full bg-white/20 p-2 transition hover:bg-white/30"
+              className="rounded-lg bg-zinc-900 border border-zinc-800 p-2 transition hover:border-zinc-700"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -219,7 +219,7 @@ export default function CocinaPage() {
             </div>
             <div className="flex items-center gap-2">
               {/* Connection Status */}
-              <div className={`rounded-full px-2 py-1 flex items-center gap-1.5 ${
+              <div className={`rounded-lg px-2 py-1 flex items-center gap-1.5 ${
                 isConnected 
                   ? 'bg-green-500/20 border border-green-500/50' 
                   : 'bg-red-500/20 border border-red-500/50'
@@ -232,7 +232,7 @@ export default function CocinaPage() {
                 <span className="text-xs">{isConnected ? 'En línea' : 'Desconectado'}</span>
               </div>
               
-              <div className="flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1.5">
+              <div className="flex items-center gap-2 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1.5">
                 <ChefHat className="h-4 w-4" />
                 <span className="text-sm font-medium">Cocina</span>
               </div>
@@ -241,17 +241,17 @@ export default function CocinaPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 p-3">
+            <div className="rounded-lg bg-zinc-900 border border-zinc-800 p-3">
               <div className="flex items-center gap-2 mb-1">
-                <Clock className="h-4 w-4 text-yellow-300" />
-                <span className="text-xs text-white/80">Pendientes</span>
+                <Clock className="h-4 w-4 text-yellow-400" />
+                <span className="text-xs text-gray-400">Pendientes</span>
               </div>
               <p className="text-2xl font-bold">{pendingCount}</p>
             </div>
-            <div className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 p-3">
+            <div className="rounded-lg bg-zinc-900 border border-zinc-800 p-3">
               <div className="flex items-center gap-2 mb-1">
-                <ChefHat className="h-4 w-4 text-orange-300" />
-                <span className="text-xs text-white/80">Preparando</span>
+                <ChefHat className="h-4 w-4 text-orange-400" />
+                <span className="text-xs text-gray-400">Preparando</span>
               </div>
               <p className="text-2xl font-bold">{preparingCount}</p>
             </div>
@@ -265,8 +265,8 @@ export default function CocinaPage() {
               onClick={() => setFilter("ALL")}
               className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition ${
                 filter === "ALL"
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white hover:bg-white/20"
+                  ? "bg-orange-500 text-white"
+                  : "bg-zinc-900 border border-zinc-800 text-white hover:border-zinc-700"
               }`}
             >
               Todas ({orders.length})
@@ -275,8 +275,8 @@ export default function CocinaPage() {
               onClick={() => setFilter("PENDIENTE")}
               className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition ${
                 filter === "PENDIENTE"
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white hover:bg-white/20"
+                  ? "bg-orange-500 text-white"
+                  : "bg-zinc-900 border border-zinc-800 text-white hover:border-zinc-700"
               }`}
             >
               Pendientes ({pendingCount})
@@ -285,8 +285,8 @@ export default function CocinaPage() {
               onClick={() => setFilter("PREPARANDO")}
               className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition ${
                 filter === "PREPARANDO"
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white hover:bg-white/20"
+                  ? "bg-orange-500 text-white"
+                  : "bg-zinc-900 border border-zinc-800 text-white hover:border-zinc-700"
               }`}
             >
               Preparando ({preparingCount})
@@ -311,12 +311,12 @@ export default function CocinaPage() {
             return (
               <div
                 key={order.id}
-                className={`rounded-2xl border-2 p-5 transition-all ${
+                className={`rounded-lg border p-5 transition-all ${
                   order.status === "PENDIENTE"
                     ? isUrgent 
-                      ? "bg-red-500/20 border-red-500/50 animate-pulse" 
-                      : "bg-yellow-500/10 border-yellow-500/40"
-                    : "bg-orange-500/10 border-orange-500/40"
+                      ? "bg-zinc-900 border-red-500 animate-pulse" 
+                      : "bg-zinc-900 border-yellow-500"
+                    : "bg-zinc-900 border-orange-500"
                 }`}
               >
                 {/* Order Header */}
@@ -325,7 +325,7 @@ export default function CocinaPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl font-bold tracking-tight">{order.orderNumber}</span>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+                        className={`rounded-lg px-3 py-1 text-xs font-bold uppercase tracking-wide ${
                           order.status === "PENDIENTE"
                             ? isUrgent
                               ? "bg-red-500 text-white"
@@ -336,13 +336,13 @@ export default function CocinaPage() {
                         {order.status === "PENDIENTE" ? "⏱️ Pendiente" : "👨‍🍳 Preparando"}
                       </span>
                       {isUrgent && order.status === "PENDIENTE" && (
-                        <span className="rounded-full bg-red-600 px-2 py-1 text-xs font-bold text-white animate-pulse">
+                        <span className="rounded-lg bg-red-600 px-2 py-1 text-xs font-bold text-white animate-pulse">
                           ⚠️ URGENTE
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-white/80">
-                      <div className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2 py-1">
+                    <div className="flex items-center gap-3 text-sm text-gray-400">
+                      <div className="flex items-center gap-1.5 rounded-lg bg-zinc-800 border border-zinc-700 px-2 py-1">
                         <span className="text-lg">🪑</span>
                         <span className="font-semibold">Mesa {order.table.number}</span>
                       </div>
@@ -353,8 +353,8 @@ export default function CocinaPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="rounded-lg bg-black/30 px-3 py-1.5 mb-1">
-                      <p className="text-xs text-white/60">Recibido</p>
+                    <div className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-1.5 mb-1">
+                      <p className="text-xs text-gray-400">Recibido</p>
                       <p className="text-sm font-bold">
                         {new Date(order.createdAt).toLocaleTimeString("es-CO", {
                           hour: "2-digit",
@@ -362,7 +362,7 @@ export default function CocinaPage() {
                         })}
                       </p>
                     </div>
-                    <p className={`text-xs font-medium ${isUrgent ? "text-red-400" : "text-white/60"}`}>
+                    <p className={`text-xs font-medium ${isUrgent ? "text-red-400" : "text-gray-400"}`}>
                       Hace {timeElapsed} min
                     </p>
                   </div>
@@ -370,8 +370,8 @@ export default function CocinaPage() {
 
                 {/* Order Items - Professional Layout */}
                 <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
-                    <span className="text-xs font-bold text-white/60 uppercase tracking-wider">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                       Productos ({order.items.length})
                     </span>
                   </div>
@@ -379,11 +379,11 @@ export default function CocinaPage() {
                     {order.items.map((item, index) => (
                       <div
                         key={item.id}
-                        className="rounded-xl bg-black/30 backdrop-blur-sm border border-white/10 p-4 hover:border-white/20 transition-colors"
+                        className="rounded-lg bg-zinc-800 border border-zinc-700 p-4 hover:border-zinc-600 transition-colors"
                       >
                         <div className="flex items-start gap-3">
                           {/* Quantity Badge */}
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500 font-bold text-lg shadow-lg">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-500 font-bold text-lg">
                             {item.quantity}×
                           </div>
 
@@ -393,23 +393,23 @@ export default function CocinaPage() {
                               <h4 className="font-bold text-base text-white leading-tight">
                                 {item.product.name}
                               </h4>
-                              <span className="shrink-0 rounded-md bg-white/10 px-2 py-0.5 text-xs font-medium text-white/80">
+                              <span className="shrink-0 rounded-md bg-zinc-700 px-2 py-0.5 text-xs font-medium text-gray-300">
                                 #{index + 1}
                               </span>
                             </div>
                             {item.product.description && (
-                              <p className="text-xs text-white/60 leading-relaxed mb-2">
+                              <p className="text-xs text-gray-400 leading-relaxed mb-2">
                                 {item.product.description}
                               </p>
                             )}
                             
                             {/* Notes - Highlighted */}
                             {item.notes && (
-                              <div className="mt-3 rounded-lg bg-gradient-to-r from-orange-500/30 to-red-500/30 border-l-4 border-orange-500 p-3">
+                              <div className="mt-3 rounded-lg bg-orange-500/20 border-l-4 border-orange-500 p-3">
                                 <div className="flex items-start gap-2">
                                   <span className="text-lg shrink-0">📝</span>
                                   <div className="flex-1">
-                                    <p className="text-xs font-bold text-orange-200 uppercase tracking-wide mb-1">
+                                    <p className="text-xs font-bold text-orange-300 uppercase tracking-wide mb-1">
                                       Observaciones:
                                     </p>
                                     <p className="text-sm text-white font-medium leading-relaxed">
@@ -431,7 +431,7 @@ export default function CocinaPage() {
                   {order.status === "PENDIENTE" ? (
                     <button
                       onClick={() => updateOrderStatus(order.id, "PREPARANDO")}
-                      className="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 font-bold text-base transition hover:from-orange-600 hover:to-red-600 active:scale-95 flex items-center justify-center gap-2 shadow-lg"
+                      className="flex-1 rounded-lg bg-orange-500 px-6 py-4 font-bold text-base transition hover:bg-orange-600 active:scale-95 flex items-center justify-center gap-2"
                     >
                       <ChefHat className="h-5 w-5" />
                       Empezar a Preparar
@@ -439,7 +439,7 @@ export default function CocinaPage() {
                   ) : (
                     <button
                       onClick={() => updateOrderStatus(order.id, "LISTA")}
-                      className="flex-1 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4 font-bold text-base transition hover:from-green-600 hover:to-emerald-600 active:scale-95 flex items-center justify-center gap-2 shadow-lg"
+                      className="flex-1 rounded-lg bg-green-500 px-6 py-4 font-bold text-base transition hover:bg-green-600 active:scale-95 flex items-center justify-center gap-2"
                     >
                       <CheckCircle className="h-5 w-5" />
                       ✓ Marcar como Lista
