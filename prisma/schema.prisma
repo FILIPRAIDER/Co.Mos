@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,36 +8,61 @@ datasource db {
 }
 
 enum Role {
-  CLIENT
-  WORKER   // "trabajador"
+  CLIENTE
+  MESERO
+  COCINERO
   ADMIN
 }
 
 enum OrderStatus {
-  PENDING       // Pendiente
-  PREPARING     // En preparación
-  READY         // Listo para entregar
-  DELIVERED     // Entregado
-  PAID          // Pagado
-  CANCELLED     // Cancelado
+  PENDIENTE
+  ACEPTADA
+  PREPARANDO
+  LISTA
+  ENTREGADA
+  COMPLETADA
+  PAGADA
+  CANCELADA
 }
 
 enum OrderType {
-  DINE_IN       // Para comer aquí
-  TAKEAWAY      // Para llevar
+  COMER_AQUI
+  PARA_LLEVAR
+}
+
+model Restaurant {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  address         String?
+  phone           String?
+  email           String?
+  logoUrl         String?
+  taxRate         Float     @default(0.19)
+  currency        String    @default("COP")
+  users           User[]
+  categories      Category[]
+  products        Product[]
+  tables          Table[]
+  orders          Order[]
+  inventory       InventoryItem[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String
-  email         String?  @unique
-  document      String   @unique           // cédula/NIT para workers/admins
+  email         String?     @unique
+  document      String      @unique
   passwordHash  String
-  role          Role     @default(CLIENT)
-
+  role          Role        @default(CLIENTE)
+  restaurantId  String?
+  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   orders        Order[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  @@index([restaurantId])
 }
 
 model Category {
@@ -47,75 +71,102 @@ model Category {
   description   String?
   imageUrl      String?
   order         Int       @default(0)
-  
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   products      Product[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  @@index([restaurantId])
 }
 
 model Product {
   id            String    @id @default(cuid())
   name          String
-  description   String?
+  description   String?   @db.Text
   price         Float
   imageUrl      String?
   available     Boolean   @default(true)
-  categoryId    String
-  
-  category      Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category      String    @default("PLATO_PRINCIPAL") // ENTRADA, PLATO_PRINCIPAL, POSTRE, BEBIDA, OTRO
+  categoryId    String?
+  categoryRef   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   orderItems    OrderItem[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
   @@index([categoryId])
+  @@index([restaurantId])
 }
 
 model Table {
-  id            String    @id @default(cuid())
-  number        Int       @unique
-  capacity      Int       @default(4)
-  available     Boolean   @default(true)
-  
+  id            String      @id @default(cuid())
+  number        Int
+  capacity      Int         @default(4)
+  available     Boolean     @default(true)
+  qrCode        String      @unique
+  qrImageUrl    String?     @db.Text
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  sessions      TableSession[]
   orders        Order[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  @@unique([restaurantId, number])
+  @@index([restaurantId])
+  @@index([qrCode])
+}
+
+model TableSession {
+  id              String      @id @default(cuid())
+  tableId         String
+  table           Table       @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  sessionCode     String      @unique
+  customerName    String?
+  active          Boolean     @default(true)
+  orders          Order[]
+  startedAt       DateTime    @default(now())
+  closedAt        DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  @@index([tableId])
+  @@index([sessionCode])
 }
 
 model Order {
-  id                String      @id @default(cuid())
-  orderNumber       String      @unique
-  type              OrderType
-  status            OrderStatus @default(PENDING)
-  
-  // Info del cliente (sin autenticación)
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique
+  type              OrderType     @default(COMER_AQUI)
+  status            OrderStatus   @default(PENDIENTE)
+  restaurantId      String
+  restaurant        Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tableId           String?
+  table             Table?        @relation(fields: [tableId], references: [id])
+  sessionId         String?
+  session           TableSession? @relation(fields: [sessionId], references: [id])
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id])
   customerName      String?
   customerEmail     String?
-  
-  // Relaciones
-  tableId           String?
-  table             Table?      @relation(fields: [tableId], references: [id])
-  
-  userId            String?     // Usuario que creó la orden (trabajador/admin)
-  user              User?       @relation(fields: [userId], references: [id])
-  
   items             OrderItem[]
-  review            Review?     // Reseña de la orden
-  
-  // Montos
+  review            Review?
   subtotal          Float
-  tax               Float       @default(0)
-  tip               Float       @default(0)
+  tax               Float         @default(0)
+  tip               Float         @default(0)
+  discount          Float         @default(0)
   total             Float
-  
-  // Observaciones
-  notes             String?     @db.Text
-  
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
+  notes             String?       @db.Text
+  acceptedAt        DateTime?
+  preparedAt        DateTime?
+  deliveredAt       DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  @@index([restaurantId])
   @@index([tableId])
+  @@index([sessionId])
   @@index([userId])
   @@index([status])
+  @@index([orderNumber])
 }
 
 model OrderItem {
@@ -123,15 +174,12 @@ model OrderItem {
   orderId       String
   productId     String
   quantity      Int
-  price         Float    // Precio al momento de la orden
-  notes         String?  // Observaciones del producto (ej: sin cebolla)
-  
+  price         Float
+  notes         String?
   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product       Product  @relation(fields: [productId], references: [id])
-  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
   @@index([orderId])
   @@index([productId])
 }
@@ -139,13 +187,26 @@ model OrderItem {
 model Review {
   id            String   @id @default(cuid())
   orderId       String   @unique
-  rating        Int      // 1-5 estrellas
+  rating        Int
   comment       String?  @db.Text
-  
   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-
   @@index([rating])
+}
+
+model InventoryItem {
+  id              String      @id @default(cuid())
+  name            String
+  sku             String?
+  quantity        Float
+  unit            String      @default("unidad")
+  minStock        Float?
+  cost            Float?
+  restaurantId    String
+  restaurant      Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  @@unique([restaurantId, sku])
+  @@index([restaurantId])
 }

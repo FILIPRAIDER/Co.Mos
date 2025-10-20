@@ -44,10 +44,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // Actualizar estado de la orden a PAID (completada)
+    // Actualizar estado de la orden a PAGADA (completada)
     await prisma.order.update({
       where: { id: orderId },
-      data: { status: 'PAID' },
+      data: { status: 'PAGADA' },
     });
 
     return NextResponse.json({ 

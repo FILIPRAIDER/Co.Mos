@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, Plus, Minus, ShoppingCart, Package, Table2 } from "lucide-react";
 
@@ -29,7 +29,7 @@ type CartItem = {
   notes?: string;
 };
 
-export default function OrdenesPage() {
+function OrdenesContent() {
   const searchParams = useSearchParams();
   const mesaParam = searchParams.get("mesa");
   
@@ -328,5 +328,20 @@ export default function OrdenesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OrdenesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-sm text-white/60">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <OrdenesContent />
+    </Suspense>
   );
 }

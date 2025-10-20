@@ -50,50 +50,54 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-neutral-950 text-white grid place-items-center px-5">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-2">
-          <Image src="/Logo.svg" alt="co.mos" width={32} height={32} />
-          <span className="text-xl font-semibold">co.mos</span>
+    <main className="min-h-screen bg-gradient-to-br from-orange-500 via-red-500 to-red-600 text-white px-4 py-6 flex items-center justify-center">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Image src="/Logo.svg" alt="co.mos" width={48} height={48} className="drop-shadow-lg" />
+            <span className="text-3xl font-bold drop-shadow-lg">co.mos</span>
+          </div>
+          <h1 className="text-3xl font-bold mb-2 drop-shadow-lg">Bienvenido de vuelta</h1>
+          <p className="text-white/90 text-lg">Ingresa con tus credenciales</p>
         </div>
 
-        <h1 className="text-center text-2xl font-semibold">Acceso Al Sistema</h1>
-        <p className="text-center text-neutral-400 mb-6">Ingresa Con Tus Credenciales</p>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="rounded-2xl bg-white/10 backdrop-blur-sm border border-white/30 p-6 space-y-4">
+            <label className="block">
+              <span className="text-sm font-medium mb-2 block">Cédula</span>
+              <input
+                className="w-full rounded-lg bg-white/20 border border-white/30 px-4 py-3 text-white placeholder-white/60 focus:border-white/50 focus:bg-white/30 focus:outline-none transition"
+                placeholder="1234567890"
+                value={document}
+                onChange={(e) => setDocument(e.target.value)}
+                required
+              />
+            </label>
 
-        <form onSubmit={onSubmit} className="grid gap-4">
-          <label className="grid gap-2">
-            <span className="text-sm">Cédula</span>
-            <input
-              className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-3 py-2"
-              placeholder="Ingresa Tu Número De Cédula"
-              value={document}
-              onChange={(e) => setDocument(e.target.value)}
-              required
-            />
-          </label>
-
-          <label className="grid gap-2">
-            <span className="text-sm">Contraseña</span>
-            <input
-              type="password"
-              className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-3 py-2"
-              placeholder="Introduce Tu Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
+            <label className="block">
+              <span className="text-sm font-medium mb-2 block">Contraseña</span>
+              <input
+                type="password"
+                className="w-full rounded-lg bg-white/20 border border-white/30 px-4 py-3 text-white placeholder-white/60 focus:border-white/50 focus:bg-white/30 focus:outline-none transition"
+                placeholder="Tu contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </label>
+          </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full rounded-md bg-white text-black py-3 font-medium disabled:opacity-60"
+            className="w-full rounded-xl bg-white text-black py-4 font-bold text-lg transition hover:bg-white/90 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
           >
             {loading ? "Entrando..." : "Iniciar sesión"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm">
+        <p className="mt-6 text-center text-sm text-white/90">
           ¿Aún no tienes acceso?{" "}
           <a className="font-semibold underline" href="/auth/register">
             Regístrate aquí

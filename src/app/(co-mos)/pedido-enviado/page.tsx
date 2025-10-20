@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 
-export default function PedidoEnviadoPage() {
+function PedidoEnviadoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -114,5 +114,20 @@ export default function PedidoEnviadoPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PedidoEnviadoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-sm text-white/60">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <PedidoEnviadoContent />
+    </Suspense>
   );
 }

@@ -25,16 +25,28 @@ export default function ConfirmarPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
+    const savedSession = localStorage.getItem('sessionCode');
+    const savedTableNumber = localStorage.getItem('tableNumber');
+    
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     } else {
       router.push('/menu');
+    }
+    
+    if (savedSession) {
+      setSessionCode(savedSession);
+    }
+    
+    if (savedTableNumber) {
+      setTableNumber(parseInt(savedTableNumber));
     }
   }, [router]);
 
@@ -51,18 +63,8 @@ export default function ConfirmarPage() {
   };
 
   const handleSubmit = () => {
-    if (!customerName.trim()) {
-      alert('Por favor ingresa tu nombre');
-      return;
-    }
-    if (!customerEmail.trim()) {
-      alert('Por favor ingresa tu correo electrónico');
-      return;
-    }
-    // Validación básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(customerEmail.trim())) {
-      alert('Por favor ingresa un correo electrónico válido');
+    if (!sessionCode) {
+      alert('No se encontró una sesión válida. Por favor escanea el código QR de tu mesa.');
       return;
     }
     setShowConfirmModal(true);
@@ -73,17 +75,14 @@ export default function ConfirmarPage() {
     
     try {
       const orderData = {
-        customerName: customerName.trim(),
-        customerEmail: customerEmail.trim(),
+        sessionCode: sessionCode!,
+        customerName: customerName.trim() || undefined,
+        type: 'COMER_AQUI',
         items: cart.map(item => ({
           productId: item.product.id,
           quantity: item.quantity,
-          price: item.product.price,
           notes: item.notes,
         })),
-        subtotal: getSubtotal(),
-        tax: getIVA(),
-        total: getTotal(),
       };
 
       const response = await fetch('/api/orders', {
@@ -95,19 +94,20 @@ export default function ConfirmarPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al crear la orden');
+        const error = await response.json();
+        throw new Error(error.error || 'Error al crear la orden');
       }
 
       const result = await response.json();
       
-      // Limpiar carrito
+      // Limpiar carrito pero mantener sesión
       localStorage.removeItem('cart');
       
       // Redirigir a página de éxito
       router.push(`/pedido-enviado?orderId=${result.order.id}`);
     } catch (error) {
       console.error('Error:', error);
-      alert('Hubo un error al enviar tu pedido. Por favor intenta de nuevo.');
+      alert(error instanceof Error ? error.message : 'Hubo un error al enviar tu pedido. Por favor intenta de nuevo.');
       setIsSubmitting(false);
       setShowConfirmModal(false);
     }
@@ -177,12 +177,18 @@ export default function ConfirmarPage() {
           <p className="text-sm text-white/60">
             Después de confirmar, tu orden llegará directo a cocina.
           </p>
+          {tableNumber && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-orange-500/20 border border-orange-500/30 px-3 py-2">
+              <span className="text-orange-500">🪑</span>
+              <span className="text-sm text-orange-500 font-medium">Mesa {tableNumber}</span>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-white">
-              Nombre completo
+              Nombre (opcional)
             </label>
             <input
               type="text"
@@ -191,19 +197,9 @@ export default function ConfirmarPage() {
               placeholder="Juan Pérez"
               className="w-full rounded-lg border border-white/10 bg-[#1a1a1f] px-4 py-3 text-white placeholder-white/40 focus:border-white/30 focus:outline-none"
             />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-white">
-              Correo electrónico
-            </label>
-            <input
-              type="email"
-              value={customerEmail}
-              onChange={(e) => setCustomerEmail(e.target.value)}
-              placeholder="juan@ejemplo.com"
-              className="w-full rounded-lg border border-white/10 bg-[#1a1a1f] px-4 py-3 text-white placeholder-white/40 focus:border-white/30 focus:outline-none"
-            />
+            <p className="mt-1 text-xs text-white/50">
+              Si quieres que te llamemos por tu nombre
+            </p>
           </div>
         </div>
       </div>
@@ -229,7 +225,7 @@ export default function ConfirmarPage() {
 
         <button
           onClick={handleSubmit}
-          disabled={!customerName.trim() || !customerEmail.trim()}
+          disabled={!sessionCode || isSubmitting}
           className="w-full rounded-lg bg-orange-500 py-3 font-semibold transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Confirmar Orden

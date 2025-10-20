@@ -5,7 +5,7 @@ declare module "next-auth" {
     user: {
       name?: string | null;
       email?: string | null;
-      role?: "CLIENT" | "WORKER" | "ADMIN";
+      role?: "CLIENTE" | "MESERO" | "COCINERO" | "ADMIN";
       document?: string;
     };
   }

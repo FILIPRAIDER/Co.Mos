@@ -64,7 +64,7 @@ export default function WelcomePage() {
         </h1>
 
         {/* CTA */}
-        <div className="mt-6">
+        <div className="mt-6 space-y-3">
           <button
             type="button"
             onClick={handleStart}
@@ -78,6 +78,19 @@ export default function WelcomePage() {
             "
           >
             Empezar
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push('/auth/login')}
+            className="
+              block w-full text-center
+              bg-white/10 backdrop-blur-sm text-white font-medium
+              py-3 rounded-md border border-white/30
+              transition-all hover:bg-white/20 hover:border-white/50
+            "
+          >
+            Soy trabajador
           </button>
 
           <p className="mt-3 text-center text-xs text-neutral-300">

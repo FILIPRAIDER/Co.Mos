@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, ShoppingCart, X } from "lucide-react";
 import Image from "next/image";
 
@@ -38,8 +40,9 @@ const categoryEmojis: Record<string, string> = {
   "Postres y Dulces": "🍰",
 };
 
-export default function MenuPage() {
+function MenuContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +50,33 @@ export default function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [tableNumber, setTableNumber] = useState<number | null>(null);
+
+  // Cargar sessionCode y tableNumber desde query params o localStorage
+  useEffect(() => {
+    const sessionFromUrl = searchParams.get('session');
+    if (sessionFromUrl) {
+      setSessionCode(sessionFromUrl);
+      localStorage.setItem('sessionCode', sessionFromUrl);
+      
+      // Obtener también el tableNumber del localStorage (fue guardado en el scan)
+      const savedTableNumber = localStorage.getItem('tableNumber');
+      if (savedTableNumber) {
+        setTableNumber(parseInt(savedTableNumber));
+      }
+    } else {
+      // Intentar cargar desde localStorage
+      const savedSession = localStorage.getItem('sessionCode');
+      const savedTableNumber = localStorage.getItem('tableNumber');
+      if (savedSession) {
+        setSessionCode(savedSession);
+      }
+      if (savedTableNumber) {
+        setTableNumber(parseInt(savedTableNumber));
+      }
+    }
+  }, [searchParams]);
 
   // Cargar carrito desde localStorage al montar el componente
   useEffect(() => {
@@ -140,8 +170,11 @@ export default function MenuPage() {
   };
 
   const handleViewCart = () => {
-    // Guardar carrito en localStorage
+    // Guardar carrito y sessionCode en localStorage
     localStorage.setItem('cart', JSON.stringify(cart));
+    if (sessionCode) {
+      localStorage.setItem('sessionCode', sessionCode);
+    }
     router.push('/carrito');
   };
 
@@ -152,9 +185,16 @@ export default function MenuPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#0a0a0f] border-b border-white/10">
         <div className="flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Image src="/Logo.svg" alt="co.mos" width={32} height={32} />
-            <span className="text-lg font-semibold">co.mos</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-semibold">co.mos</span>
+              {tableNumber && (
+                <span className="text-xs text-orange-500 font-medium">
+                  Mesa {tableNumber}
+                </span>
+              )}
+            </div>
           </div>
           
           <button
@@ -377,5 +417,20 @@ export default function MenuPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MenuPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-sm text-white/60">Cargando menú...</p>
+        </div>
+      </div>
+    }>
+      <MenuContent />
+    </Suspense>
   );
 }

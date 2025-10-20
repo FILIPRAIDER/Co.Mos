@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Star, Send, Home } from "lucide-react";
 
-export default function ResenaPage() {
+function ResenaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -178,5 +178,20 @@ export default function ResenaPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResenaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-sm text-white/60">Cargando...</p>
+        </div>
+      </div>
+    }>
+      <ResenaContent />
+    </Suspense>
   );
 }

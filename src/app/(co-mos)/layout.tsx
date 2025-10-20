@@ -18,7 +18,14 @@ export default function CoMosLayout({ children }: { children: React.ReactNode })
       {showSplash && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black">
           <div className="flex flex-col items-center gap-3">
-            <Image src="/Logo.svg" alt="co.mos" width={64} height={64} priority />
+            <Image 
+              src="/Logo.svg" 
+              alt="co.mos" 
+              width={64} 
+              height={64} 
+              style={{ width: 'auto', height: 'auto' }}
+              priority 
+            />
             <span className="text-white text-2xl font-semibold tracking-wide">co.mos</span>
           </div>
         </div>
