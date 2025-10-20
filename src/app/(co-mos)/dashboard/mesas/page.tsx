@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useSocket, emitEvent } from "@/lib/socket";
+import { useAlert } from "@/hooks/useAlert";
 
 type Session = {
   id: string;
@@ -48,6 +49,7 @@ export default function AdminMesasPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { socket, isConnected } = useSocket();
+  const { success, error, confirm, AlertComponent } = useAlert();
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -160,66 +162,85 @@ export default function AdminMesasPage() {
         setShowCreateModal(false);
         setNewTableNumber("");
         await fetchTables();
+        success("Mesa creada correctamente");
       } else {
-        const error = await response.json();
-        alert(error.error || "Error al crear mesa");
+        const errorData = await response.json();
+        error(errorData.error || "Error al crear mesa");
       }
-    } catch (error) {
-      console.error("Error creating table:", error);
-      alert("Error al crear mesa");
+    } catch (err) {
+      console.error("Error creating table:", err);
+      error("Error al crear mesa");
     }
   };
 
   const deleteTable = async (tableId: string, tableNumber: number) => {
-    if (!confirm("¿Estás seguro de eliminar esta mesa?")) return;
+    confirm(
+      `¿Estás seguro de eliminar la Mesa ${tableNumber}? Esta acción no se puede deshacer.`,
+      async () => {
+        try {
+          const response = await fetch(`/api/tables/${tableId}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const response = await fetch(`/api/tables/${tableId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        // Emitir evento de Socket.io
-        emitEvent('table:deleted', {
-          tableId,
-          tableNumber,
-          timestamp: new Date().toISOString(),
-        });
-        
-        await fetchTables();
-      } else {
-        const error = await response.json();
-        alert(error.error || "No se puede eliminar mesa con sesiones activas");
-      }
-    } catch (error) {
-      console.error("Error deleting table:", error);
-    }
+          if (response.ok) {
+            // Emitir evento de Socket.io
+            emitEvent('table:deleted', {
+              tableId,
+              tableNumber,
+              timestamp: new Date().toISOString(),
+            });
+            
+            await fetchTables();
+            success("Mesa eliminada correctamente");
+          } else {
+            const errorData = await response.json();
+            error(errorData.error || "No se puede eliminar mesa con sesiones activas");
+          }
+        } catch (err) {
+          console.error("Error deleting table:", err);
+          error("Error al eliminar mesa");
+        }
+      },
+      "Eliminar Mesa",
+      "Eliminar",
+      "Cancelar"
+    );
   };
 
   const closeSession = async (sessionId: string, sessionCode: string, tableNumber: number) => {
-    if (!confirm("¿Cerrar esta sesión? La mesa quedará disponible.")) return;
+    confirm(
+      `¿Cerrar la sesión ${sessionCode} de la Mesa ${tableNumber}? La mesa quedará disponible.`,
+      async () => {
+        try {
+          const response = await fetch(`/api/sessions/${sessionId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ active: false }),
+          });
 
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: false }),
-      });
-
-      if (response.ok) {
-        // Emitir evento de Socket.io
-        emitEvent('session:closed', {
-          sessionId,
-          sessionCode,
-          tableNumber,
-          timestamp: new Date().toISOString(),
-        });
-        
-        await fetchTables();
-      }
-    } catch (error) {
-      console.error("Error closing session:", error);
-    }
+          if (response.ok) {
+            // Emitir evento de Socket.io
+            emitEvent('session:closed', {
+              sessionId,
+              sessionCode,
+              tableNumber,
+              timestamp: new Date().toISOString(),
+            });
+            
+            await fetchTables();
+            success("Sesión cerrada correctamente");
+          } else {
+            error("Error al cerrar sesión");
+          }
+        } catch (err) {
+          console.error("Error closing session:", err);
+          error("Error al cerrar sesión");
+        }
+      },
+      "Cerrar Sesión",
+      "Cerrar",
+      "Cancelar"
+    );
   };
 
   const downloadQR = (table: Table) => {
@@ -561,6 +582,9 @@ export default function AdminMesasPage() {
           </div>
         </div>
       )}
+
+      {/* Alert Component */}
+      <AlertComponent />
     </div>
   );
 }

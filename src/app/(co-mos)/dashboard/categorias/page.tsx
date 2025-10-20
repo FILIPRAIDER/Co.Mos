@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, Plus, Pencil, Trash2, Image as ImageIcon, Package } from "lucide-react";
 import Image from "next/image";
+import { useAlert } from "@/hooks/useAlert";
 
 type Category = {
   id: string;
@@ -20,6 +21,7 @@ type Category = {
 export default function CategoriasPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { success, error, confirm, AlertComponent } = useAlert();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -79,10 +81,13 @@ export default function CategoriasPage() {
       if (response.ok) {
         const data = await response.json();
         setFormData((prev) => ({ ...prev, imageUrl: data.url }));
+        success("Imagen subida correctamente");
+      } else {
+        error("Error al subir la imagen");
       }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      alert("Error al subir la imagen");
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      error("Error al subir la imagen");
     } finally {
       setUploading(false);
     }
@@ -92,7 +97,7 @@ export default function CategoriasPage() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert("El nombre es requerido");
+      error("El nombre es requerido");
       return;
     }
 
@@ -112,41 +117,54 @@ export default function CategoriasPage() {
       if (response.ok) {
         await fetchCategories();
         closeModal();
+        success(
+          editingCategory
+            ? "Categoría actualizada correctamente"
+            : "Categoría creada correctamente"
+        );
       } else {
-        const error = await response.json();
-        alert(error.error || "Error al guardar categoría");
+        const errorData = await response.json();
+        error(errorData.error || "Error al guardar categoría");
       }
-    } catch (error) {
-      console.error("Error saving category:", error);
-      alert("Error al guardar categoría");
+    } catch (err) {
+      console.error("Error saving category:", err);
+      error("Error al guardar categoría");
     }
   };
 
   const handleDelete = async (category: Category) => {
     if (category._count && category._count.products > 0) {
-      alert(`No se puede eliminar. Hay ${category._count.products} producto(s) usando esta categoría`);
+      error(
+        `No se puede eliminar. Hay ${category._count.products} producto(s) usando esta categoría`,
+        "Categoría en uso"
+      );
       return;
     }
 
-    if (!window.confirm(`¿Eliminar categoría "${category.name}"?`)) {
-      return;
-    }
+    confirm(
+      `¿Estás seguro de eliminar la categoría "${category.name}"? Esta acción no se puede deshacer.`,
+      async () => {
+        try {
+          const response = await fetch(`/api/categories/${category.id}`, {
+            method: "DELETE",
+          });
 
-    try {
-      const response = await fetch(`/api/categories/${category.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        await fetchCategories();
-      } else {
-        const error = await response.json();
-        alert(error.error || "Error al eliminar categoría");
-      }
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      alert("Error al eliminar categoría");
-    }
+          if (response.ok) {
+            await fetchCategories();
+            success("Categoría eliminada correctamente");
+          } else {
+            const errorData = await response.json();
+            error(errorData.error || "Error al eliminar categoría");
+          }
+        } catch (err) {
+          console.error("Error deleting category:", err);
+          error("Error al eliminar categoría");
+        }
+      },
+      "Eliminar Categoría",
+      "Eliminar",
+      "Cancelar"
+    );
   };
 
   const openModal = (category?: Category) => {
@@ -442,6 +460,9 @@ export default function CategoriasPage() {
           </div>
         </div>
       )}
+
+      {/* Alert Component */}
+      <AlertComponent />
     </div>
   );
 }
