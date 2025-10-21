@@ -198,28 +198,43 @@ function MenuContent() {
 
   const handleQRScan = (url: string) => {
     try {
-      // Extraer parámetros de la URL escaneada
-      const scannedUrl = new URL(url);
-      const params = new URLSearchParams(scannedUrl.search);
+      console.log("QR scanned URL:", url);
       
-      const restaurantIdFromQR = params.get('restaurantId');
-      const tableIdFromQR = params.get('tableId');
-      const tableNumberFromQR = params.get('table');
-      
-      if (restaurantIdFromQR && tableIdFromQR) {
-        // Guardar contexto del restaurante
-        localStorage.setItem('restaurantId', restaurantIdFromQR);
-        localStorage.setItem('tableId', tableIdFromQR);
-        if (tableNumberFromQR) {
-          localStorage.setItem('tableNumber', tableNumberFromQR);
+      // Si la URL es completa (http://...)
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        const scannedUrl = new URL(url);
+        
+        // Si tiene parámetros query, extraerlos
+        const params = new URLSearchParams(scannedUrl.search);
+        const restaurantIdFromQR = params.get('restaurantId');
+        const tableIdFromQR = params.get('tableId');
+        const tableNumberFromQR = params.get('table');
+        
+        if (restaurantIdFromQR && tableIdFromQR) {
+          localStorage.setItem('restaurantId', restaurantIdFromQR);
+          localStorage.setItem('tableId', tableIdFromQR);
+          if (tableNumberFromQR) {
+            localStorage.setItem('tableNumber', tableNumberFromQR);
+          }
         }
         
-        // Redirigir a la URL escaneada
+        // Redirigir a la URL completa
         setShowQRScanner(false);
         window.location.href = url;
+      } 
+      // Si es una ruta relativa (como /scan/...)
+      else if (url.startsWith('/')) {
+        setShowQRScanner(false);
+        router.push(url);
+      }
+      // Si es solo el código
+      else {
+        setShowQRScanner(false);
+        router.push(`/scan/${url}`);
       }
     } catch (error) {
       console.error('Error processing QR code:', error);
+      setShowQRScanner(false);
       alert('Código QR inválido. Por favor, escanea el código QR de tu mesa.');
     }
   };
