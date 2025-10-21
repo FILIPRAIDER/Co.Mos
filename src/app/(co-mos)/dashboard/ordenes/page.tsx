@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, Plus, Minus, ShoppingCart, Package, Table2 } from "lucide-react";
+import Image from "next/image";
 
 type Category = {
   id: string;
@@ -228,8 +229,19 @@ function OrdenesContent() {
                     key={product.id}
                     className="rounded-lg border border-white/10 bg-[#1a1a1f] p-4"
                   >
-                    <div className="mb-3 flex h-32 items-center justify-center rounded-lg bg-white/5">
-                      <div className="text-6xl">🍔</div>
+                    <div className="mb-3 flex h-32 items-center justify-center rounded-lg bg-white/5 overflow-hidden">
+                      {product.imageUrl ? (
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-6xl">🍔</div>
+                      )}
                     </div>
                     <h3 className="font-medium text-white">{product.name}</h3>
                     <p className="mt-1 text-xs text-white/50">{product.description}</p>
@@ -273,6 +285,16 @@ function OrdenesContent() {
                       key={item.product.id}
                       className="flex items-start gap-3 rounded-lg bg-white/5 p-3"
                     >
+                      {item.product.imageUrl && (
+                        <div className="relative h-12 w-12 shrink-0">
+                          <Image
+                            src={item.product.imageUrl}
+                            alt={item.product.name}
+                            fill
+                            className="rounded-lg object-cover"
+                          />
+                        </div>
+                      )}
                       <div className="flex-1">
                         <h4 className="text-sm font-medium text-white">
                           {item.product.name}
