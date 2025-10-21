@@ -14,6 +14,7 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const hasScannedRef = useRef(false);
 
   useEffect(() => {
     startScanner();
@@ -43,9 +44,24 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
           disableFlip: false,
         },
         (decodedText) => {
+          // Prevenir múltiples escaneos
+          if (hasScannedRef.current) return;
+          hasScannedRef.current = true;
+          
           console.log("QR Code scanned:", decodedText);
-          stopScanner();
-          onScanSuccess(decodedText);
+          setIsScanning(false);
+          
+          // Detener scanner primero
+          if (scannerRef.current) {
+            scannerRef.current.stop().catch(() => {
+              // Ignorar errores al detener
+            });
+          }
+          
+          // Luego llamar callback
+          setTimeout(() => {
+            onScanSuccess(decodedText);
+          }, 100);
         },
         (errorMessage) => {
           // Ignorar errores de escaneo continuo
@@ -63,10 +79,14 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        const state = await scannerRef.current.getState();
+        if (state === 2) { // Scanner is running (2 = SCANNING)
+          await scannerRef.current.stop();
+        }
         scannerRef.current.clear();
       } catch (err) {
-        console.error("Error stopping scanner:", err);
+        // Ignorar errores si el scanner ya está detenido
+        console.log("Scanner already stopped or cleared");
       }
     }
     setIsScanning(false);
