@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, Download, Printer, QrCode } from "lucide-react";
 import QRCodeStyling from "qr-code-styling";
+import JSZip from "jszip";
 
 type Table = {
   id: string;
@@ -18,6 +19,7 @@ export default function QRExportPage() {
   const { data: session, status } = useSession();
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingZip, setDownloadingZip] = useState(false);
   const qrRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
@@ -52,10 +54,10 @@ export default function QRExportPage() {
     const qrUrl = `${baseUrl}/scan/comos-mesa-${table.number}_${table.id.substring(0, 8)}`;
 
     const qrCode = new QRCodeStyling({
-      width: 300,
-      height: 300,
+      width: 240,
+      height: 240,
       data: qrUrl,
-      margin: 10,
+      margin: 8,
       qrOptions: {
         typeNumber: 0,
         mode: "Byte",
@@ -113,10 +115,35 @@ export default function QRExportPage() {
   };
 
   const downloadAllQRs = async () => {
+    const zip = new JSZip();
+    const qrFolder = zip.folder("QR-Codes-Mesas");
+
+    if (!qrFolder) return;
+
+    // Agregar cada QR al ZIP
     for (const table of tables) {
-      await downloadQR(table);
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      const element = qrRefs.current.get(table.id);
+      if (!element) continue;
+
+      const canvas = element.querySelector("canvas");
+      if (canvas) {
+        // Convertir canvas a blob
+        const dataUrl = canvas.toDataURL("image/png");
+        const base64Data = dataUrl.split(",")[1];
+        
+        // Agregar al ZIP
+        qrFolder.file(`Mesa-${table.number}.png`, base64Data, { base64: true });
+      }
     }
+
+    // Generar y descargar el ZIP
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = window.URL.createObjectURL(content);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `QR-Codes-Mesas-${new Date().toISOString().split("T")[0]}.zip`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const printQRs = () => {
@@ -150,6 +177,10 @@ export default function QRExportPage() {
             left: 0;
             top: 0;
             width: 100%;
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 1rem !important;
+            padding: 1rem !important;
           }
           .no-print {
             display: none !important;
@@ -157,7 +188,21 @@ export default function QRExportPage() {
           .qr-card {
             page-break-inside: avoid;
             break-inside: avoid;
+            border: 2px solid #333 !important;
+            padding: 1rem !important;
+            background: white !important;
+            color: black !important;
           }
+          .qr-card h3,
+          .qr-card p {
+            color: black !important;
+          }
+        }
+        
+        .qr-container canvas {
+          max-width: 100% !important;
+          height: auto !important;
+          display: block !important;
         }
       `}</style>
 
@@ -202,35 +247,37 @@ export default function QRExportPage() {
         </div>
 
         {/* QR Grid */}
-        <div className="print-area grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="print-area grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {tables.map((table) => (
             <div
               key={table.id}
-              className="qr-card rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-center"
+              className="qr-card rounded-lg border border-zinc-800 bg-zinc-900 p-4 text-center flex flex-col"
             >
-              <div className="mb-4">
-                <h3 className="text-xl font-bold">Mesa #{table.number}</h3>
-                <p className="text-sm text-white/60">{table.capacity} personas</p>
+              <div className="mb-3">
+                <h3 className="text-lg font-bold">Mesa #{table.number}</h3>
+                <p className="text-xs text-white/60">{table.capacity} personas</p>
               </div>
 
               <div
                 ref={(el) => {
                   if (el) qrRefs.current.set(table.id, el);
                 }}
-                className="mx-auto mb-4 flex items-center justify-center rounded-lg bg-white p-4"
-                style={{ width: "fit-content" }}
-              />
+                className="qr-container mx-auto mb-3 flex items-center justify-center rounded-lg bg-white p-3 max-w-full overflow-hidden"
+                style={{ width: "100%", maxWidth: "260px" }}
+              >
+                {/* QR Code will be rendered here */}
+              </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1 mb-3">
                 <p className="text-xs text-white/40">Escanea para ver el menú</p>
-                <p className="text-xs text-white/60 font-mono break-all">
+                <p className="text-[10px] text-white/50 font-mono break-all px-2">
                   {`${window.location.origin}/scan/comos-mesa-${table.number}_${table.id.substring(0, 8)}`}
                 </p>
               </div>
 
               <button
                 onClick={() => downloadQR(table)}
-                className="no-print mt-4 w-full rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium transition hover:bg-orange-600"
+                className="no-print mt-auto w-full rounded-lg bg-orange-500 px-3 py-2 text-sm font-medium transition hover:bg-orange-600"
               >
                 <Download className="inline-block h-4 w-4 mr-2" />
                 Descargar

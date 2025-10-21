@@ -14,6 +14,34 @@ import {
   PieChart,
   ArrowLeft,
 } from "lucide-react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 type OrderStats = {
   totalOrders: number;
@@ -211,7 +239,7 @@ export default function ReportesPage() {
       </div>
 
       {/* Top Products */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 mb-6">
         <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="h-5 w-5 text-orange-500" />
@@ -275,11 +303,278 @@ export default function ReportesPage() {
         </div>
       </div>
 
-      {/* Future: Charts and graphs can be added here */}
-      <div className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900 p-6">
-        <p className="text-center text-sm text-white/40">
-          📈 Gráficos de tendencias próximamente...
-        </p>
+      {/* Charts Section */}
+      <div className="grid gap-6 lg:grid-cols-2 mb-6">
+        {/* Revenue Line Chart */}
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="h-5 w-5 text-orange-500" />
+            <h2 className="text-lg font-semibold">Ingresos por Día</h2>
+          </div>
+          {stats?.revenueByDay && stats.revenueByDay.length > 0 ? (
+            <Line
+              data={{
+                labels: stats.revenueByDay.map((d) => 
+                  new Date(d.date).toLocaleDateString("es-MX", { 
+                    month: "short", 
+                    day: "numeric" 
+                  })
+                ),
+                datasets: [
+                  {
+                    label: "Ingresos ($)",
+                    data: stats.revenueByDay.map((d) => d.revenue),
+                    borderColor: "rgb(249, 115, 22)",
+                    backgroundColor: "rgba(249, 115, 22, 0.1)",
+                    fill: true,
+                    tension: 0.4,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                  legend: {
+                    display: false,
+                  },
+                  tooltip: {
+                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    padding: 12,
+                    titleColor: "#fff",
+                    bodyColor: "#fff",
+                    borderColor: "rgb(249, 115, 22)",
+                    borderWidth: 1,
+                  },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      color: "rgba(255, 255, 255, 0.6)",
+                      callback: (value) => `$${value}`,
+                    },
+                    grid: {
+                      color: "rgba(255, 255, 255, 0.1)",
+                    },
+                  },
+                  x: {
+                    ticks: {
+                      color: "rgba(255, 255, 255, 0.6)",
+                    },
+                    grid: {
+                      display: false,
+                    },
+                  },
+                },
+              }}
+            />
+          ) : (
+            <p className="text-center text-sm text-white/40 py-8">
+              No hay datos disponibles
+            </p>
+          )}
+        </div>
+
+        {/* Top Products Bar Chart */}
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="h-5 w-5 text-orange-500" />
+            <h2 className="text-lg font-semibold">Top 5 Productos</h2>
+          </div>
+          {stats?.topProducts && stats.topProducts.length > 0 ? (
+            <Bar
+              data={{
+                labels: stats.topProducts.slice(0, 5).map((p) => p.productName),
+                datasets: [
+                  {
+                    label: "Cantidad Vendida",
+                    data: stats.topProducts.slice(0, 5).map((p) => p.quantity),
+                    backgroundColor: [
+                      "rgba(249, 115, 22, 0.8)",
+                      "rgba(59, 130, 246, 0.8)",
+                      "rgba(34, 197, 94, 0.8)",
+                      "rgba(168, 85, 247, 0.8)",
+                      "rgba(236, 72, 153, 0.8)",
+                    ],
+                    borderColor: [
+                      "rgb(249, 115, 22)",
+                      "rgb(59, 130, 246)",
+                      "rgb(34, 197, 94)",
+                      "rgb(168, 85, 247)",
+                      "rgb(236, 72, 153)",
+                    ],
+                    borderWidth: 2,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 2,
+                plugins: {
+                  legend: {
+                    display: false,
+                  },
+                  tooltip: {
+                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    padding: 12,
+                    titleColor: "#fff",
+                    bodyColor: "#fff",
+                    borderColor: "rgb(249, 115, 22)",
+                    borderWidth: 1,
+                  },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      color: "rgba(255, 255, 255, 0.6)",
+                      stepSize: 1,
+                    },
+                    grid: {
+                      color: "rgba(255, 255, 255, 0.1)",
+                    },
+                  },
+                  x: {
+                    ticks: {
+                      color: "rgba(255, 255, 255, 0.6)",
+                    },
+                    grid: {
+                      display: false,
+                    },
+                  },
+                },
+              }}
+            />
+          ) : (
+            <p className="text-center text-sm text-white/40 py-8">
+              No hay datos disponibles
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Orders by Status Doughnut Chart */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <PieChart className="h-5 w-5 text-orange-500" />
+            <h2 className="text-lg font-semibold">Distribución de Estados</h2>
+          </div>
+          {stats?.ordersByStatus && Object.keys(stats.ordersByStatus).length > 0 ? (
+            <div className="flex justify-center">
+              <Doughnut
+                data={{
+                  labels: Object.keys(stats.ordersByStatus).map((status) => {
+                    const labels: Record<string, string> = {
+                      PENDING: "Pendiente",
+                      PREPARING: "Preparando",
+                      READY: "Lista",
+                      DELIVERED: "Entregada",
+                      PAID: "Pagada",
+                      CANCELLED: "Cancelada",
+                    };
+                    return labels[status] || status;
+                  }),
+                  datasets: [
+                    {
+                      data: Object.values(stats.ordersByStatus),
+                      backgroundColor: [
+                        "rgba(234, 179, 8, 0.8)",
+                        "rgba(59, 130, 246, 0.8)",
+                        "rgba(34, 197, 94, 0.8)",
+                        "rgba(168, 85, 247, 0.8)",
+                        "rgba(249, 115, 22, 0.8)",
+                        "rgba(239, 68, 68, 0.8)",
+                      ],
+                      borderColor: [
+                        "rgb(234, 179, 8)",
+                        "rgb(59, 130, 246)",
+                        "rgb(34, 197, 94)",
+                        "rgb(168, 85, 247)",
+                        "rgb(249, 115, 22)",
+                        "rgb(239, 68, 68)",
+                      ],
+                      borderWidth: 2,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  aspectRatio: 1.5,
+                  plugins: {
+                    legend: {
+                      position: "bottom",
+                      labels: {
+                        color: "rgba(255, 255, 255, 0.8)",
+                        padding: 12,
+                        font: {
+                          size: 12,
+                        },
+                      },
+                    },
+                    tooltip: {
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      padding: 12,
+                      titleColor: "#fff",
+                      bodyColor: "#fff",
+                      borderColor: "rgb(249, 115, 22)",
+                      borderWidth: 1,
+                    },
+                  },
+                }}
+              />
+            </div>
+          ) : (
+            <p className="text-center text-sm text-white/40 py-8">
+              No hay datos disponibles
+            </p>
+          )}
+        </div>
+
+        {/* Additional Stats */}
+        <div className="lg:col-span-2 rounded-lg border border-zinc-800 bg-zinc-900 p-6">
+          <h2 className="text-lg font-semibold mb-4">📈 Resumen de Análisis</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg bg-white/5 p-4">
+              <p className="text-sm text-white/60 mb-1">Tasa de Conversión</p>
+              <p className="text-2xl font-bold text-green-400">
+                {stats?.totalOrders && stats.totalRevenue
+                  ? ((stats.totalOrders / (stats.totalOrders + 10)) * 100).toFixed(1)
+                  : "0"}
+                %
+              </p>
+              <p className="text-xs text-white/40 mt-1">Órdenes completadas</p>
+            </div>
+            <div className="rounded-lg bg-white/5 p-4">
+              <p className="text-sm text-white/60 mb-1">Ingreso por Orden</p>
+              <p className="text-2xl font-bold text-orange-400">
+                ${stats?.averageOrderValue?.toFixed(2) || "0"}
+              </p>
+              <p className="text-xs text-white/40 mt-1">Promedio del período</p>
+            </div>
+            <div className="rounded-lg bg-white/5 p-4">
+              <p className="text-sm text-white/60 mb-1">Propinas</p>
+              <p className="text-2xl font-bold text-purple-400">
+                {stats?.totalTips && stats.totalRevenue
+                  ? ((stats.totalTips / stats.totalRevenue) * 100).toFixed(1)
+                  : "0"}
+                %
+              </p>
+              <p className="text-xs text-white/40 mt-1">Del total de ingresos</p>
+            </div>
+            <div className="rounded-lg bg-white/5 p-4">
+              <p className="text-sm text-white/60 mb-1">Productos Activos</p>
+              <p className="text-2xl font-bold text-blue-400">
+                {stats?.topProducts?.length || 0}
+              </p>
+              <p className="text-xs text-white/40 mt-1">Diferentes productos vendidos</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

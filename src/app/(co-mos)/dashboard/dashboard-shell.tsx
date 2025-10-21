@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useMemo, useState, useEffect, type ReactNode, type SVGProps } from "react";
 import Image from "next/image";
+import NotificationBadge from "@/app/components/NotificationBadge";
 
 const navGroups = [
   {
@@ -13,7 +14,7 @@ const navGroups = [
       { label: "Inicio", href: "/dashboard", icon: HomeIcon },
       { label: "Órdenes", href: "/dashboard/ordenes", icon: ClipboardIcon },
       { label: "Mesas", href: "/dashboard/mesas", icon: TableIcon },
-      { label: "Reportes", href: "/dashboard/reportes", icon: ChartIcon },
+      { label: "Reportes", href: "/dashboard/reportes", icon: ChartIcon, adminOnly: true },
     ],
   },
   {
@@ -21,6 +22,7 @@ const navGroups = [
     items: [
       { label: "Productos", href: "/dashboard/productos", icon: BoxIcon },
       { label: "Categorías", href: "/dashboard/categorias", icon: TagIcon },
+      { label: "Inventario", href: "/dashboard/inventario", icon: PackageIcon, adminOnly: true },
     ],
   },
   {
@@ -28,6 +30,12 @@ const navGroups = [
     items: [
       { label: "Vista Cocina", href: "/cocina", icon: ChefHatIcon },
       { label: "Vista Servicio", href: "/servicio", icon: ServerIcon },
+    ],
+  },
+  {
+    label: "Herramientas",
+    items: [
+      { label: "Exportar QR", href: "/dashboard/qr-export", icon: QrCodeIcon, adminOnly: true },
     ],
   },
 ];
@@ -110,48 +118,55 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </button>
         </div>
         <nav className="mt-8 space-y-6">
-          {navGroups.map((group) => (
-            <div key={group.label} className="space-y-3">
-              {!sidebarCollapsed && (
-                <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{group.label}</p>
-              )}
-              <ul className="space-y-1.5">
-                {group.items.map((item) => (
-                  <li key={item.label}>
-                    {item.href ? (
-                      <Link
-                        href={item.href}
-                        className={`
-                          flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
-                          ${
-                            pathname.startsWith(item.href)
-                              ? "bg-white/10 text-white"
-                              : "text-white/60 hover:bg-white/5 hover:text-white"
-                          }
-                          ${sidebarCollapsed ? "justify-center" : ""}
-                        `}
-                        title={sidebarCollapsed ? item.label : undefined}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!sidebarCollapsed && <span>{item.label}</span>}
-                      </Link>
-                    ) : (
-                      <button
-                        type="button"
-                        className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/40 ring-0 transition-colors hover:bg-white/5 hover:text-white/80 ${
-                          sidebarCollapsed ? "justify-center" : ""
-                        }`}
-                        title={sidebarCollapsed ? item.label : undefined}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!sidebarCollapsed && <span>{item.label}</span>}
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {navGroups.map((group) => {
+            const filteredItems = group.items.filter(
+              (item) => !item.adminOnly || session?.user?.role === "ADMIN"
+            );
+            if (filteredItems.length === 0) return null;
+            
+            return (
+              <div key={group.label} className="space-y-3">
+                {!sidebarCollapsed && (
+                  <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{group.label}</p>
+                )}
+                <ul className="space-y-1.5">
+                  {filteredItems.map((item) => (
+                    <li key={item.label}>
+                      {item.href ? (
+                        <Link
+                          href={item.href}
+                          className={`
+                            flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                            ${
+                              pathname.startsWith(item.href)
+                                ? "bg-white/10 text-white"
+                                : "text-white/60 hover:bg-white/5 hover:text-white"
+                            }
+                            ${sidebarCollapsed ? "justify-center" : ""}
+                          `}
+                          title={sidebarCollapsed ? item.label : undefined}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!sidebarCollapsed && <span>{item.label}</span>}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/40 ring-0 transition-colors hover:bg-white/5 hover:text-white/80 ${
+                            sidebarCollapsed ? "justify-center" : ""
+                          }`}
+                          title={sidebarCollapsed ? item.label : undefined}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!sidebarCollapsed && <span>{item.label}</span>}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </nav>
       </aside>
 
@@ -179,42 +194,49 @@ export function DashboardShell({ children }: DashboardShellProps) {
               </button>
             </div>
             <nav className="mt-6 space-y-6">
-              {navGroups.map((group) => (
-                <div key={group.label} className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{group.label}</p>
-                  <ul className="space-y-1.5">
-                    {group.items.map((item) => (
-                      <li key={`${group.label}-${item.label}`}>
-                        {item.href ? (
-                          <Link
-                            href={item.href}
-                            className={`
-                              flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
-                              ${
-                                pathname.startsWith(item.href)
-                                  ? "bg-white/10 text-white"
-                                  : "text-white/60 hover:bg-white/5 hover:text-white"
-                              }
-                            `}
-                            onClick={closeMobile}
-                          >
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.label}</span>
-                          </Link>
-                        ) : (
-                          <button
-                            type="button"
-                            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/40 transition-colors hover:bg-white/5 hover:text-white/80"
-                          >
-                            <item.icon className="h-4 w-4" />
-                            <span>{item.label}</span>
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+              {navGroups.map((group) => {
+                const filteredItems = group.items.filter(
+                  (item) => !item.adminOnly || session?.user?.role === "ADMIN"
+                );
+                if (filteredItems.length === 0) return null;
+                
+                return (
+                  <div key={group.label} className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-white/40">{group.label}</p>
+                    <ul className="space-y-1.5">
+                      {filteredItems.map((item) => (
+                        <li key={`${group.label}-${item.label}`}>
+                          {item.href ? (
+                            <Link
+                              href={item.href}
+                              className={`
+                                flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                                ${
+                                  pathname.startsWith(item.href)
+                                    ? "bg-white/10 text-white"
+                                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                                }
+                              `}
+                              onClick={closeMobile}
+                            >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.label}</span>
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/40 transition-colors hover:bg-white/5 hover:text-white/80"
+                            >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.label}</span>
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
             </nav>
           </div>
         </div>
@@ -237,6 +259,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBadge />
             <div className="text-right">
               <p className="text-sm font-medium text-white">Hola, {firstName}</p>
               <p className="text-xs text-white/50">{roleLabel}</p>
@@ -410,6 +433,26 @@ function ServerIcon(props: IconProps) {
       <rect x="2" y="14" width="20" height="7" rx="2" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="6" cy="6.5" r="1" fill="currentColor" />
       <circle cx="6" cy="17.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PackageIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m3.3 7 8.7 5 8.7-5M12 22V12" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function QrCodeIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M17 14h4M17 18h4M17 21h4" strokeLinecap="round" />
     </svg>
   );
 }
