@@ -1,12 +1,13 @@
 "use client";
 
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, ShoppingCart, X, AlertCircle } from "lucide-react";
+import { Search, ShoppingCart, X, AlertCircle, QrCode } from "lucide-react";
 import Image from "next/image";
 import { hasValidRestaurantContext } from "@/lib/restaurant-context";
+import dynamic from "next/dynamic";
+
+const QRScanner = dynamic(() => import("@/components/QRScanner"), { ssr: false });
 
 type Category = {
   id: string;
@@ -54,6 +55,13 @@ function MenuContent() {
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevenir hidratación errors
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Cargar sessionCode, tableNumber y restaurantId desde query params o localStorage
   useEffect(() => {
@@ -188,24 +196,84 @@ function MenuContent() {
     router.push('/carrito');
   };
 
+  const handleQRScan = (url: string) => {
+    try {
+      // Extraer parámetros de la URL escaneada
+      const scannedUrl = new URL(url);
+      const params = new URLSearchParams(scannedUrl.search);
+      
+      const restaurantIdFromQR = params.get('restaurantId');
+      const tableIdFromQR = params.get('tableId');
+      const tableNumberFromQR = params.get('table');
+      
+      if (restaurantIdFromQR && tableIdFromQR) {
+        // Guardar contexto del restaurante
+        localStorage.setItem('restaurantId', restaurantIdFromQR);
+        localStorage.setItem('tableId', tableIdFromQR);
+        if (tableNumberFromQR) {
+          localStorage.setItem('tableNumber', tableNumberFromQR);
+        }
+        
+        // Redirigir a la URL escaneada
+        setShowQRScanner(false);
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Error processing QR code:', error);
+      alert('Código QR inválido. Por favor, escanea el código QR de tu mesa.');
+    }
+  };
+
   const currentCategory = categories.find(cat => cat.id === selectedCategory);
 
-  // Validar que el usuario haya escaneado un QR
-  if (!hasValidRestaurantContext() && typeof window !== 'undefined') {
+  // Prevenir flash mientras se monta el componente
+  if (!isMounted) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
-        <AlertCircle className="h-16 w-16 text-orange-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Acceso No Autorizado</h2>
-        <p className="text-gray-400 text-center mb-6">
-          Debes escanear el código QR de tu mesa para acceder al menú
-        </p>
-        <button
-          onClick={() => router.push('/')}
-          className="rounded-lg bg-orange-500 px-6 py-3 font-semibold transition hover:bg-orange-600"
-        >
-          Volver al inicio
-        </button>
+      <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="mt-4 text-sm text-white/60">Cargando...</p>
+        </div>
       </div>
+    );
+  }
+
+  // Validar que el usuario haya escaneado un QR
+  if (!hasValidRestaurantContext()) {
+    return (
+      <>
+        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
+          <div className="rounded-full bg-orange-500/20 p-6 mb-6">
+            <AlertCircle className="h-16 w-16 text-orange-500" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Acceso No Autorizado</h2>
+          <p className="text-gray-400 text-center mb-8 max-w-md">
+            Debes escanear el código QR de tu mesa para acceder al menú
+          </p>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <button
+              onClick={() => setShowQRScanner(true)}
+              className="flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-3 font-semibold transition hover:bg-orange-600"
+            >
+              <QrCode className="h-5 w-5" />
+              Escanear QR
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className="rounded-lg bg-white/10 px-6 py-3 font-semibold transition hover:bg-white/20"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        </div>
+        
+        {showQRScanner && (
+          <QRScanner 
+            onScanSuccess={handleQRScan}
+            onClose={() => setShowQRScanner(false)}
+          />
+        )}
+      </>
     );
   }
 
