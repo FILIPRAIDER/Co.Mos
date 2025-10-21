@@ -14,7 +14,7 @@ interface AlertState {
 }
 
 export function useAlert() {
-  const [alert, setAlert] = useState<AlertState>({
+  const [alertState, setAlertState] = useState<AlertState>({
     isOpen: false,
     type: "info",
     title: "",
@@ -27,7 +27,7 @@ export function useAlert() {
     type: AlertType = "info",
     confirmText?: string
   ) => {
-    setAlert({
+    setAlertState({
       isOpen: true,
       type,
       title,
@@ -43,7 +43,7 @@ export function useAlert() {
     confirmText: string = "Confirmar",
     cancelText: string = "Cancelar"
   ) => {
-    setAlert({
+    setAlertState({
       isOpen: true,
       type: "confirm",
       title,
@@ -81,19 +81,19 @@ export function useAlert() {
   };
 
   const closeAlert = () => {
-    setAlert((prev) => ({ ...prev, isOpen: false }));
+    setAlertState((prev) => ({ ...prev, isOpen: false }));
   };
 
   const AlertComponent = () => (
     <Alert
-      isOpen={alert.isOpen}
+      isOpen={alertState.isOpen}
       onClose={closeAlert}
-      onConfirm={alert.onConfirm}
-      type={alert.type}
-      title={alert.title}
-      message={alert.message}
-      confirmText={alert.confirmText}
-      cancelText={alert.cancelText}
+      onConfirm={alertState.onConfirm}
+      type={alertState.type}
+      title={alertState.title}
+      message={alertState.message}
+      confirmText={alertState.confirmText}
+      cancelText={alertState.cancelText}
     />
   );
 
@@ -105,5 +105,6 @@ export function useAlert() {
     warning,
     info,
     AlertComponent,
+    alertState,
   };
 }

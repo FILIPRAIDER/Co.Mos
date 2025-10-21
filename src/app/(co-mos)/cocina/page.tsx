@@ -16,6 +16,7 @@ type OrderItem = {
     id: string;
     name: string;
     description?: string | null;
+    imageUrl?: string | null;
   };
 };
 
@@ -386,6 +387,18 @@ export default function CocinaPage() {
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-500 font-bold text-lg">
                             {item.quantity}×
                           </div>
+
+                          {/* Product Image */}
+                          {item.product.imageUrl && (
+                            <div className="relative h-12 w-12 shrink-0">
+                              <Image
+                                src={item.product.imageUrl}
+                                alt={item.product.name}
+                                fill
+                                className="rounded-lg object-cover"
+                              />
+                            </div>
+                          )}
 
                           {/* Product Info */}
                           <div className="flex-1 min-w-0">

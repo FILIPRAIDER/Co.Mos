@@ -15,6 +15,7 @@ type OrderItem = {
     id: string;
     name: string;
     description?: string | null;
+    imageUrl?: string | null;
   };
 };
 
@@ -266,6 +267,16 @@ export default function ServicioPage() {
                           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold">
                             {item.quantity}
                           </span>
+                          {item.product.imageUrl && (
+                            <div className="relative h-10 w-10 shrink-0">
+                              <Image
+                                src={item.product.imageUrl}
+                                alt={item.product.name}
+                                fill
+                                className="rounded-lg object-cover"
+                              />
+                            </div>
+                          )}
                           <span className="font-medium">{item.product.name}</span>
                         </div>
                       </div>

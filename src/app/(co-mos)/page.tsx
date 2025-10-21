@@ -80,21 +80,17 @@ export default function WelcomePage() {
             Empezar
           </button>
 
-          <button
-            type="button"
-            onClick={() => router.push('/auth/login')}
-            className="
-              block w-full text-center
-              bg-white/10 backdrop-blur-sm text-white font-medium
-              py-3 rounded-md border border-white/30
-              transition-all hover:bg-white/20 hover:border-white/50
-            "
-          >
-            Soy trabajador
-          </button>
-
-          <p className="mt-3 text-center text-xs text-neutral-300">
-            Al continuar aceptas nuestros <span className="underline">Términos y Condiciones</span>
+          <p className="mt-4 text-center text-xs text-neutral-300 space-y-1">
+            <span className="block">
+              Al continuar aceptas nuestros <span className="underline">Términos y Condiciones</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => router.push('/auth/login')}
+              className="block w-full text-neutral-300 hover:text-white transition-colors underline"
+            >
+              ¿Eres trabajador? Inicia sesión aquí
+            </button>
           </p>
         </div>
       </section>
