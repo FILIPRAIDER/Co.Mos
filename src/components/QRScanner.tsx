@@ -78,12 +78,12 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm">
-      <div className="relative w-full max-w-md mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-md">
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute -top-12 right-0 rounded-lg bg-white/10 p-2 text-white transition hover:bg-white/20 z-10"
+          className="absolute -top-14 right-0 rounded-lg bg-white/10 p-2 text-white transition hover:bg-white/20 z-10"
         >
           <XCircle className="h-6 w-6" />
         </button>
@@ -105,21 +105,19 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
 
           {/* Scanner Area */}
           <div className="p-6">
-            <div className="relative">
+            <div className="relative mx-auto" style={{ maxWidth: '400px' }}>
               {/* QR Scanner */}
               <div 
                 id="qr-reader" 
-                className="rounded-xl overflow-hidden border-4 border-orange-500/50 qr-scanner-container"
+                className="rounded-xl overflow-hidden border-4 border-orange-500/50 qr-scanner-container w-full"
               />
 
               {/* Scanning Animation Overlay */}
               {isScanning && (
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-64 h-64 border-2 border-orange-500 rounded-lg animate-pulse" />
-                  </div>
-                  <div className="absolute top-1/2 left-0 right-0 flex justify-center">
-                    <div className="w-full max-w-[250px] h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent animate-scan" />
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-64 h-64 border-2 border-orange-500 rounded-lg animate-pulse" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[250px]">
+                    <div className="h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent animate-scan" />
                   </div>
                 </div>
               )}
@@ -206,14 +204,25 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
           display: none !important;
         }
         
-        /* Asegurar que solo se muestre un video */
+        /* Asegurar que solo se muestre un video centrado */
+        :global(.qr-scanner-container) {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        
         :global(.qr-scanner-container video) {
           width: 100% !important;
           height: auto !important;
           display: block !important;
+          margin: 0 auto !important;
         }
         
         :global(.qr-scanner-container video + video) {
+          display: none !important;
+        }
+        
+        :global(.qr-scanner-container canvas) {
           display: none !important;
         }
       `}</style>
