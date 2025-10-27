@@ -15,6 +15,40 @@ function ResenaContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  const cleanupSession = () => {
+    // Limpiar localStorage
+    localStorage.removeItem('sessionCode');
+    localStorage.removeItem('tableId');
+    localStorage.removeItem('tableNumber');
+    localStorage.removeItem('restaurantId');
+    localStorage.removeItem('restaurantName');
+    localStorage.removeItem('restaurantSlug');
+    localStorage.removeItem('cart');
+    localStorage.removeItem('scannedAt');
+  };
+
+  const liftTable = async () => {
+    const sessionCode = localStorage.getItem('sessionCode');
+    const tableId = localStorage.getItem('tableId');
+
+    if (tableId && sessionCode) {
+      try {
+        await fetch(`/api/tables/${tableId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            action: 'lift',
+            sessionCode,
+          }),
+        });
+      } catch (error) {
+        console.error('Error al levantar mesa:', error);
+      }
+    }
+  };
+
   const handleSubmit = async () => {
     if (rating === 0) {
       alert('Por favor selecciona una calificación');
@@ -24,7 +58,8 @@ function ResenaContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/reviews', {
+      // 1. Enviar reseña
+      const reviewResponse = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,21 +71,34 @@ function ResenaContent() {
         }),
       });
 
-      if (!response.ok) {
+      if (!reviewResponse.ok) {
         throw new Error('Error al enviar la reseña');
       }
 
+      // 2. Levantar mesa
+      await liftTable();
+
+      // 3. Limpiar sesión
+      cleanupSession();
+
       setSubmitted(true);
       
-      // Redirigir al menú después de 2 segundos
+      // Redirigir al inicio después de 2 segundos
       setTimeout(() => {
-        router.push('/menu');
+        router.push('/');
       }, 2000);
     } catch (error) {
       console.error('Error:', error);
       alert('Hubo un error al enviar tu reseña. Por favor intenta de nuevo.');
       setIsSubmitting(false);
     }
+  };
+
+  const handleSkip = async () => {
+    // Levantar mesa y limpiar sesión aunque no deje reseña
+    await liftTable();
+    cleanupSession();
+    router.push('/');
   };
 
   if (submitted) {
@@ -66,9 +114,9 @@ function ResenaContent() {
             Tu opinión nos ayuda a mejorar cada día
           </p>
 
-          <div className="rounded-lg bg-orange-500/10 border border-orange-500/20 p-4">
-            <p className="text-sm text-orange-300">
-              Redirigiendo al menú...
+          <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-4">
+            <p className="text-sm text-green-300">
+              ¡Hasta pronto! 👋
             </p>
           </div>
         </div>
@@ -162,11 +210,11 @@ function ResenaContent() {
           </button>
 
           <button
-            onClick={() => router.push('/menu')}
+            onClick={handleSkip}
             className="flex items-center justify-center gap-2 rounded-lg border border-white/10 py-3 font-medium transition hover:bg-white/5"
           >
             <Home className="h-4 w-4" />
-            Omitir y Volver al Menú
+            Omitir y Salir
           </button>
         </div>
 

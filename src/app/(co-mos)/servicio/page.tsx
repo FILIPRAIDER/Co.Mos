@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { UtensilsCrossed, CheckCircle, ArrowLeft, Clock } from "lucide-react";
+import { UtensilsCrossed, CheckCircle, ArrowLeft, Clock, X } from "lucide-react";
 import Image from "next/image";
 import { emitEvent } from "@/lib/socket";
 
@@ -52,6 +52,7 @@ export default function ServicioPage() {
   const [tables, setTables] = useState<TableWithOrders[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"orders" | "tables">("orders");
+  const [selectedTableForBill, setSelectedTableForBill] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -320,6 +321,7 @@ export default function ServicioPage() {
               activeTables.map((table) => {
                 const activeSession = table.sessions.find(s => s.active);
                 const sessionOrders = activeSession?.orders || [];
+                const hasDeliveredOrders = sessionOrders.some(o => o.status === 'ENTREGADA');
                 
                 return (
                   <div
@@ -333,10 +335,21 @@ export default function ServicioPage() {
                           <p className="text-sm text-gray-400">{activeSession.customerName}</p>
                         )}
                       </div>
-                      <div className="rounded-lg bg-orange-500/20 border border-orange-500/50 px-3 py-1">
-                        <span className="text-sm font-medium text-orange-300">
-                          {sessionOrders.length} {sessionOrders.length === 1 ? "orden" : "órdenes"}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-lg bg-orange-500/20 border border-orange-500/50 px-3 py-1">
+                          <span className="text-sm font-medium text-orange-300">
+                            {sessionOrders.length} {sessionOrders.length === 1 ? "orden" : "órdenes"}
+                          </span>
+                        </div>
+                        {hasDeliveredOrders && activeSession && (
+                          <button
+                            onClick={() => setSelectedTableForBill(activeSession.id)}
+                            className="rounded-lg bg-green-500 hover:bg-green-600 px-3 py-1 text-sm font-medium text-white transition"
+                            title="Ver factura"
+                          >
+                            💳
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -374,6 +387,25 @@ export default function ServicioPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Factura */}
+      {selectedTableForBill && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-end md:items-center justify-center">
+          <div className="bg-neutral-900 w-full max-w-md rounded-t-3xl md:rounded-3xl max-h-[90vh] overflow-y-auto">
+            <iframe
+              src={`/cuenta?session=${selectedTableForBill}&modal=true`}
+              className="w-full h-[90vh] border-0"
+              title="Factura"
+            />
+            <button
+              onClick={() => setSelectedTableForBill(null)}
+              className="absolute top-4 right-4 rounded-full bg-white/10 p-2 hover:bg-white/20 transition"
+            >
+              <X className="h-5 w-5 text-white" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

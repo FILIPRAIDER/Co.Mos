@@ -117,8 +117,27 @@ export default function OrderStatusBadge() {
   const config = statusConfig[order.status];
 
   const handleClick = () => {
-    router.push(`/pedido-enviado?orderId=${order.id}`);
+    // Si el estado es ENTREGADA, redirigir a la cuenta
+    if (order.status === 'ENTREGADA') {
+      const sessionCode = localStorage.getItem('sessionCode');
+      router.push(`/cuenta?session=${sessionCode}`);
+    } else {
+      router.push(`/pedido-enviado?orderId=${order.id}`);
+    }
   };
+
+  // Si el estado es ENTREGADA, mostrar botón especial para ver cuenta
+  if (order.status === 'ENTREGADA') {
+    return (
+      <button
+        onClick={handleClick}
+        className="rounded-md bg-green-500/20 border border-green-500/50 px-3 py-1.5 transition hover:bg-green-500/30 flex items-center gap-2"
+        title="Ver Cuenta"
+      >
+        <span className="text-xs font-medium text-green-400">💳 Ver Cuenta</span>
+      </button>
+    );
+  }
 
   return (
     <button

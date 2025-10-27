@@ -212,19 +212,45 @@ function PedidoEnviadoContent() {
 
         {/* Actions */}
         <div className="flex flex-col gap-3">
-          <button
-            onClick={() => router.push('/menu')}
-            className="rounded-lg bg-orange-500 py-4 font-semibold transition hover:bg-orange-600"
-          >
-            Volver al Menú
-          </button>
-          
-          {order.status === 'LISTA' && (
+          {order.status === 'ENTREGADA' ? (
+            <>
+              <button
+                onClick={() => {
+                  const sessionCode = localStorage.getItem('sessionCode');
+                  router.push(`/cuenta?session=${sessionCode}`);
+                }}
+                className="rounded-lg bg-green-500 py-4 font-semibold transition hover:bg-green-600 flex items-center justify-center gap-2"
+              >
+                💳 Ver Cuenta y Pagar
+              </button>
+              <button
+                onClick={() => router.push('/menu')}
+                className="rounded-lg border border-white/10 py-4 font-medium transition hover:bg-white/5"
+              >
+                Volver al Menú
+              </button>
+            </>
+          ) : order.status === 'LISTA' ? (
+            <>
+              <button
+                onClick={() => router.push('/menu')}
+                className="rounded-lg bg-orange-500 py-4 font-semibold transition hover:bg-orange-600"
+              >
+                Volver al Menú
+              </button>
+              <button
+                onClick={() => router.push(`/resena?orderId=${orderId}`)}
+                className="rounded-lg border border-white/10 py-4 font-medium transition hover:bg-white/5"
+              >
+                Dejar una Reseña
+              </button>
+            </>
+          ) : (
             <button
-              onClick={() => router.push(`/resena?orderId=${orderId}`)}
-              className="rounded-lg border border-white/10 py-4 font-medium transition hover:bg-white/5"
+              onClick={() => router.push('/menu')}
+              className="rounded-lg bg-orange-500 py-4 font-semibold transition hover:bg-orange-600"
             >
-              Dejar una Reseña
+              Volver al Menú
             </button>
           )}
         </div>
