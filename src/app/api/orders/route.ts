@@ -4,7 +4,55 @@ import { getCurrentRestaurant } from '@/lib/auth-helpers';
 
 export async function POST(request: Request) {
   try {
-    const restaurant = await getCurrentRestaurant();
+    // Intentar obtener restaurante desde sesión o desde body
+    let restaurantId: string | null = null;
+    
+    try {
+      const restaurant = await getCurrentRestaurant();
+      restaurantId = restaurant.id;
+    } catch {
+      // Si no está autenticado, obtener desde body o session
+      const body = await request.json();
+      
+      // Si hay sessionCode o tableId, obtener restaurantId desde la mesa/sesión
+      if (body.sessionCode) {
+        const session = await prisma.tableSession.findUnique({
+          where: { sessionCode: body.sessionCode },
+          include: { table: { include: { restaurant: true } } }
+        });
+        if (session) {
+          restaurantId = session.table.restaurantId;
+        }
+      } else if (body.tableId) {
+        const table = await prisma.table.findUnique({
+          where: { id: body.tableId },
+          include: { restaurant: true }
+        });
+        if (table) {
+          restaurantId = table.restaurantId;
+        }
+      }
+    }
+
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: 'No se pudo identificar el restaurante' },
+        { status: 400 }
+      );
+    }
+
+    // Obtener datos del restaurante
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: restaurantId }
+    });
+
+    if (!restaurant) {
+      return NextResponse.json(
+        { error: 'Restaurante no encontrado' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const { sessionCode, tableId, items, customerName, type, notes } = body;
 
@@ -156,14 +204,44 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const restaurant = await getCurrentRestaurant();
     const { searchParams } = new URL(request.url);
     const sessionCode = searchParams.get('sessionCode');
     const status = searchParams.get('status');
     const tableId = searchParams.get('tableId');
+    
+    // Intentar obtener restaurante desde sesión o desde query params
+    let restaurantId: string | null = null;
+    
+    try {
+      const restaurant = await getCurrentRestaurant();
+      restaurantId = restaurant.id;
+    } catch {
+      // Si no está autenticado, obtener desde sessionCode o tableId
+      if (sessionCode) {
+        const session = await prisma.tableSession.findUnique({
+          where: { sessionCode },
+          include: { table: true }
+        });
+        if (session) {
+          restaurantId = session.table.restaurantId;
+        }
+      } else if (tableId) {
+        const table = await prisma.table.findUnique({
+          where: { id: tableId }
+        });
+        if (table) {
+          restaurantId = table.restaurantId;
+        }
+      }
+    }
+
+    if (!restaurantId) {
+      console.log('⚠️ No restaurantId disponible en GET /api/orders');
+      return NextResponse.json([]);
+    }
 
     const where: any = {
-      restaurantId: restaurant.id,
+      restaurantId: restaurantId,
     };
 
     if (sessionCode) {
@@ -212,10 +290,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(orders);
   } catch (error) {
-    console.error('Error fetching orders:', error);
-    return NextResponse.json(
-      { error: 'Error al obtener las órdenes' },
-      { status: 500 }
-    );
+    console.error('❌ Error fetching orders:', error);
+    return NextResponse.json([]);
   }
 }

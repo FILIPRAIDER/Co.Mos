@@ -119,7 +119,7 @@ export default function ConfirmarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white pb-32">
+    <div className="min-h-screen bg-[#0a0a0f] text-white pb-48">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0a0a0f]">
         <div className="flex items-center gap-4 px-4 py-4">
