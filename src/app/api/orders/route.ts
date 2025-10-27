@@ -4,6 +4,10 @@ import { getCurrentRestaurant } from '@/lib/auth-helpers';
 
 export async function POST(request: Request) {
   try {
+    // Leer el body solo una vez
+    const body = await request.json();
+    const { sessionCode, tableId, items, customerName, type, notes } = body;
+
     // Intentar obtener restaurante desde sesión o desde body
     let restaurantId: string | null = null;
     
@@ -11,21 +15,18 @@ export async function POST(request: Request) {
       const restaurant = await getCurrentRestaurant();
       restaurantId = restaurant.id;
     } catch {
-      // Si no está autenticado, obtener desde body o session
-      const body = await request.json();
-      
-      // Si hay sessionCode o tableId, obtener restaurantId desde la mesa/sesión
-      if (body.sessionCode) {
+      // Si no está autenticado, obtener desde sessionCode o tableId
+      if (sessionCode) {
         const session = await prisma.tableSession.findUnique({
-          where: { sessionCode: body.sessionCode },
+          where: { sessionCode },
           include: { table: { include: { restaurant: true } } }
         });
         if (session) {
           restaurantId = session.table.restaurantId;
         }
-      } else if (body.tableId) {
+      } else if (tableId) {
         const table = await prisma.table.findUnique({
-          where: { id: body.tableId },
+          where: { id: tableId },
           include: { restaurant: true }
         });
         if (table) {
@@ -52,9 +53,6 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
-
-    const body = await request.json();
-    const { sessionCode, tableId, items, customerName, type, notes } = body;
 
     console.log('📝 Creando orden:', { sessionCode, tableId, itemsCount: items?.length, type });
 

@@ -13,6 +13,7 @@ const navGroups = [
     items: [
       { label: "Inicio", href: "/dashboard", icon: HomeIcon },
       { label: "Órdenes", href: "/dashboard/ordenes", icon: ClipboardIcon },
+      { label: "Historial", href: "/dashboard/historial", icon: HistoryIcon },
       { label: "Mesas", href: "/dashboard/mesas", icon: TableIcon },
       { label: "Reportes", href: "/dashboard/reportes", icon: ChartIcon, adminOnly: true },
     ],
@@ -454,6 +455,16 @@ function QrCodeIcon(props: IconProps) {
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
       <path d="M17 14h4M17 18h4M17 21h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function HistoryIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 3v5h5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 7v5l4 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

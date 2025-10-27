@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Modal from "@/components/Modal";
+import { useAlert } from "@/hooks/useAlert";
 
 type Product = {
   id: string;
@@ -24,6 +25,7 @@ type CartItem = {
 
 export default function ConfirmarPage() {
   const router = useRouter();
+  const { alert, success, error: showError } = useAlert();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [sessionCode, setSessionCode] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function ConfirmarPage() {
 
   const handleSubmit = () => {
     if (!sessionCode) {
-      alert('No se encontró una sesión válida. Por favor escanea el código QR de tu mesa.');
+      showError('No se encontró una sesión válida. Por favor escanea el código QR de tu mesa.');
       return;
     }
     setShowConfirmModal(true);
@@ -95,8 +97,8 @@ export default function ConfirmarPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al crear la orden');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear la orden');
       }
 
       const result = await response.json();
@@ -104,11 +106,15 @@ export default function ConfirmarPage() {
       // Limpiar carrito pero mantener sesión
       localStorage.removeItem('cart');
       
-      // Redirigir a página de éxito
-      router.push(`/pedido-enviado?orderId=${result.order.id}`);
+      // Mostrar éxito y redirigir
+      success('¡Pedido enviado a cocina exitosamente!');
+      
+      setTimeout(() => {
+        router.push(`/pedido-enviado?orderId=${result.order.id}`);
+      }, 1000);
     } catch (error) {
-      console.error('Error:', error);
-      alert(error instanceof Error ? error.message : 'Hubo un error al enviar tu pedido. Por favor intenta de nuevo.');
+      console.error('❌ Error al crear orden:', error);
+      showError(error instanceof Error ? error.message : 'Hubo un error al enviar tu pedido. Por favor intenta de nuevo.');
       setIsSubmitting(false);
       setShowConfirmModal(false);
     }

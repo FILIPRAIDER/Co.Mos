@@ -129,18 +129,8 @@ export default function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
               {/* QR Scanner */}
               <div 
                 id="qr-reader" 
-                className="rounded-xl overflow-hidden border-4 border-orange-500/50 qr-scanner-container w-full"
+                className="rounded-xl overflow-hidden qr-scanner-container w-full"
               />
-
-              {/* Scanning Animation Overlay */}
-              {isScanning && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-64 h-64 border-2 border-orange-500 rounded-lg animate-pulse" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[250px]">
-                    <div className="h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent animate-scan" />
-                  </div>
-                </div>
-              )}
 
               {/* Error State */}
               {error && (
