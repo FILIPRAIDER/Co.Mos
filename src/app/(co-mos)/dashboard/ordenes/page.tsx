@@ -116,6 +116,49 @@ function OrdenesContent() {
   const iva = subtotal * 0.19;
   const total = subtotal + iva;
 
+  const handleSubmitOrder = async () => {
+    if (cart.length === 0) {
+      alert('El carrito está vacío');
+      return;
+    }
+    
+    if (orderType === 'mesa' && !selectedTable) {
+      alert('Selecciona una mesa');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: orderType === 'mesa' ? 'COMER_AQUI' : 'PARA_LLEVAR',
+          tableId: orderType === 'mesa' ? selectedTable : null,
+          items: cart.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            price: item.product.price,
+            notes: item.notes || '',
+          })),
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCart([]);
+        alert(`Orden ${data.order.orderNumber} enviada exitosamente`);
+        // Opcional: redirigir a vista de cocina o dashboard
+        window.location.href = '/dashboard';
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Error al crear la orden');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al enviar la orden');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -341,7 +384,11 @@ function OrdenesContent() {
                   </div>
                 </div>
 
-                <button className="mt-4 w-full rounded-lg bg-orange-500 py-3 font-medium text-white transition hover:bg-orange-600">
+                <button 
+                  onClick={handleSubmitOrder}
+                  className="mt-4 w-full rounded-lg bg-orange-500 py-3 font-medium text-white transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={cart.length === 0 || (orderType === 'mesa' && !selectedTable)}
+                >
                   Enviar a cocina
                 </button>
               </>

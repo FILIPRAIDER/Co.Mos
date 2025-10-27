@@ -251,6 +251,7 @@ export default function DashboardPage() {
 					});
 
 					if (response.ok) {
+						success(`Mesa #${table.number} levantada exitosamente`);
 						// Emitir evento via Socket.IO
 						if (socket) {
 							socket.emit('table:updated', { tableNumber: table.number });
@@ -363,7 +364,23 @@ export default function DashboardPage() {
 					</div>
 				</div>
 
-				<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+				{tables.length === 0 ? (
+					<div className="flex flex-col items-center justify-center py-16 rounded-lg border-2 border-dashed border-white/20 bg-white/5">
+						<Table2 className="h-16 w-16 text-white/20 mb-4" />
+						<h4 className="text-xl font-semibold text-white mb-2">No hay mesas creadas</h4>
+						<p className="text-white/60 mb-6 text-center max-w-md">
+							Crea mesas para empezar a recibir pedidos y gestionar tu restaurante
+						</p>
+						<Link
+							href="/dashboard/mesas"
+							className="rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600 flex items-center gap-2"
+						>
+							<Plus className="h-5 w-5" />
+							Agregar Mesas
+						</Link>
+					</div>
+				) : (
+					<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
 					{tables.map((table) => {
 						const status = getTableStatus(table);
 						const styles = statusStyles[status];
@@ -487,6 +504,7 @@ export default function DashboardPage() {
 						);
 					})}
 				</div>
+				)}
 			</section>
 		</div>
 	);

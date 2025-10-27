@@ -38,6 +38,7 @@ type Session = {
 type Table = {
   id: string;
   number: number;
+  capacity: number;
   available: boolean;
   qrCode: string;
   qrImageUrl: string;
@@ -56,6 +57,7 @@ export default function AdminMesasPage() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [newTableNumber, setNewTableNumber] = useState("");
+  const [newTableCapacity, setNewTableCapacity] = useState("4");
   const [view, setView] = useState<"all" | "active" | "available">("all");
 
   useEffect(() => {
@@ -138,7 +140,13 @@ export default function AdminMesasPage() {
 
   const createTable = async () => {
     if (!newTableNumber.trim()) {
-      alert("Ingresa un número de mesa");
+      error("Ingresa un número de mesa");
+      return;
+    }
+
+    const capacity = parseInt(newTableCapacity);
+    if (isNaN(capacity) || capacity < 1) {
+      error("Ingresa una capacidad válida (mínimo 1 persona)");
       return;
     }
 
@@ -146,21 +154,25 @@ export default function AdminMesasPage() {
       const response = await fetch("/api/tables", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ number: parseInt(newTableNumber) }),
+        body: JSON.stringify({ 
+          number: parseInt(newTableNumber),
+          capacity: capacity
+        }),
       });
 
       if (response.ok) {
-        const newTable = await response.json();
+        const result = await response.json();
         
         // Emitir evento de Socket.io
         emitEvent('table:created', {
-          tableId: newTable.id,
-          tableNumber: newTable.number,
+          tableId: result.table.id,
+          tableNumber: result.table.number,
           timestamp: new Date().toISOString(),
         });
         
         setShowCreateModal(false);
         setNewTableNumber("");
+        setNewTableCapacity("4");
         await fetchTables();
         success("Mesa creada correctamente");
       } else {
@@ -414,6 +426,10 @@ export default function AdminMesasPage() {
                         {table.available ? "✓ Libre" : "● Ocupada"}
                       </span>
                     </div>
+                    <div className="flex items-center gap-1.5 text-white/70 mb-2">
+                      <Users className="h-4 w-4" />
+                      <span className="text-sm">{table.capacity} personas</span>
+                    </div>
                     {activeSession && (
                       <div className="space-y-1">
                         <p className="text-sm text-white/80">
@@ -513,16 +529,32 @@ export default function AdminMesasPage() {
           />
           <div className="relative z-10 w-full max-w-md rounded-2xl bg-[#1a1a1f] p-6 animate-fadeIn">
             <h3 className="text-2xl font-bold mb-4">Nueva Mesa</h3>
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Número de Mesa</label>
-              <input
-                type="number"
-                value={newTableNumber}
-                onChange={(e) => setNewTableNumber(e.target.value)}
-                placeholder="Ej: 15"
-                className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:border-orange-500 focus:outline-none"
-                autoFocus
-              />
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Número de Mesa</label>
+                <input
+                  type="number"
+                  value={newTableNumber}
+                  onChange={(e) => setNewTableNumber(e.target.value)}
+                  placeholder="Ej: 15"
+                  className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:border-orange-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <Users className="inline h-4 w-4 mr-1" />
+                  Capacidad (personas)
+                </label>
+                <input
+                  type="number"
+                  value={newTableCapacity}
+                  onChange={(e) => setNewTableCapacity(e.target.value)}
+                  placeholder="Ej: 4"
+                  min="1"
+                  className="w-full rounded-lg bg-white/10 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:border-orange-500 focus:outline-none"
+                />
+              </div>
             </div>
             <div className="flex gap-3">
               <button
