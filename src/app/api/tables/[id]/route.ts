@@ -8,8 +8,42 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { available } = body;
+    const { available, action } = body;
 
+    // Si es una acción de levantar mesa
+    if (action === 'lift') {
+      // Cerrar todas las sesiones activas
+      await prisma.tableSession.updateMany({
+        where: {
+          tableId: id,
+          active: true
+        },
+        data: {
+          active: false,
+          closedAt: new Date()
+        }
+      });
+
+      // Marcar mesa como disponible
+      const table = await prisma.table.update({
+        where: { id },
+        data: { available: true },
+        include: {
+          sessions: {
+            where: { active: true },
+            include: {
+              orders: {
+                orderBy: { createdAt: 'desc' }
+              }
+            }
+          }
+        },
+      });
+
+      return NextResponse.json({ success: true, table });
+    }
+
+    // Actualización normal de disponibilidad
     if (typeof available !== 'boolean') {
       return NextResponse.json(
         { error: 'El estado de disponibilidad es requerido' },

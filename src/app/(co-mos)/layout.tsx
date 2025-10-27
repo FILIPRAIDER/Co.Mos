@@ -2,15 +2,29 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { initContextExpirationCheck } from "@/lib/restaurant-context";
 
 export default function CoMosLayout({ children }: { children: React.ReactNode }) {
   // Splash inicial (pantalla negra con logo centrado)
   const [showSplash, setShowSplash] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const t = setTimeout(() => setShowSplash(false), 1200); // ~1.2s
     return () => clearTimeout(t);
   }, []);
+
+  // Inicializar verificación de expiración del contexto
+  useEffect(() => {
+    const cleanup = initContextExpirationCheck(() => {
+      // Cuando la sesión expira, redirigir al inicio
+      console.log('Sesión expirada, redirigiendo al inicio...');
+      router.push('/');
+    });
+
+    return cleanup;
+  }, [router]);
 
   return (
     <>

@@ -128,9 +128,9 @@ export default function CarritoPage() {
               </div>
 
               {/* Product Info */}
-              <div className="flex-1">
-                <h3 className="font-semibold text-white mb-1">{item.product.name}</h3>
-                <p className="text-xs text-white/50">{item.product.description || '400g'}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-white mb-1 truncate">{item.product.name}</h3>
+                <p className="text-xs text-white/50 truncate">{item.product.description || '400g'}</p>
                 <button
                   onClick={() => openEditNotes(item.product.id)}
                   className="mt-2 text-xs text-orange-500 underline"
@@ -140,19 +140,19 @@ export default function CarritoPage() {
               </div>
 
               {/* Quantity Controls */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => removeFromCart(item.product.id)}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
                 >
-                  <span className="text-lg font-bold">−</span>
+                  <span className="text-lg font-bold leading-none">−</span>
                 </button>
-                <span className="min-w-[20px] text-center font-bold">{item.quantity}</span>
+                <span className="min-w-[24px] text-center font-bold text-sm">{item.quantity}</span>
                 <button
                   onClick={() => addToCart(item.product.id)}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
                 >
-                  <span className="text-lg font-bold">+</span>
+                  <span className="text-lg font-bold leading-none">+</span>
                 </button>
               </div>
             </div>
@@ -191,13 +191,19 @@ export default function CarritoPage() {
       {editingItemId && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/80"
-            onClick={() => setEditingItemId(null)}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => {
+              setEditingItemId(null);
+              setTempNotes("");
+            }}
           />
           <div className="relative z-10 w-full max-w-lg bg-[#1a1a1f] rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp">
             <button
-              onClick={() => setEditingItemId(null)}
-              className="absolute right-4 top-4 rounded-full p-2 text-white/60 transition hover:bg-white/10"
+              onClick={() => {
+                setEditingItemId(null);
+                setTempNotes("");
+              }}
+              className="absolute right-4 top-4 rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
             >
               <X className="h-5 w-5" />
             </button>
@@ -211,18 +217,35 @@ export default function CarritoPage() {
               <textarea
                 value={tempNotes}
                 onChange={(e) => setTempNotes(e.target.value)}
-                placeholder="Ej: Sin cebolla, sin tomate..."
+                placeholder="Ej: Sin cebolla, sin tomate, punto medio..."
                 rows={4}
-                className="w-full rounded-xl border border-white/10 bg-black px-4 py-3 text-white placeholder-white/40 focus:border-orange-500 focus:outline-none resize-none"
+                autoFocus
+                maxLength={200}
+                className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-white placeholder-white/40 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"
+                onClick={(e) => e.stopPropagation()}
               />
+              <p className="mt-2 text-xs text-white/50">
+                {tempNotes.length}/200 caracteres
+              </p>
             </div>
 
-            <button
-              onClick={saveNotes}
-              className="w-full rounded-2xl bg-white py-3 font-semibold text-black transition hover:bg-white/90"
-            >
-              Guardar
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setEditingItemId(null);
+                  setTempNotes("");
+                }}
+                className="flex-1 rounded-2xl border border-white/10 py-3 font-semibold text-white transition hover:bg-white/5"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveNotes}
+                className="flex-1 rounded-2xl bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600"
+              >
+                Guardar
+              </button>
+            </div>
           </div>
         </div>
       )}

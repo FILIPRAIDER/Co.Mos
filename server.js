@@ -4,8 +4,8 @@ const next = require('next');
 const { Server } = require('socket.io');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = 'localhost';
-const port = 3000;
+const hostname = dev ? 'localhost' : '0.0.0.0'; // Railway necesita 0.0.0.0
+const port = parseInt(process.env.PORT || '3000', 10); // Railway asigna PORT dinámicamente
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -22,14 +22,20 @@ app.prepare().then(() => {
     }
   });
 
-  // Configurar Socket.io
+  // Configurar Socket.io con soporte para Railway
   const io = new Server(httpServer, {
     cors: {
       origin: process.env.NODE_ENV === 'production' 
-        ? process.env.NEXTAUTH_URL 
+        ? [process.env.NEXTAUTH_URL, process.env.RAILWAY_PUBLIC_DOMAIN].filter(Boolean)
         : 'http://localhost:3000',
       methods: ['GET', 'POST'],
+      credentials: true,
     },
+    // Configuración para Railway
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['websocket', 'polling'],
+    allowEIO3: true,
   });
 
   // Contador de conexiones
@@ -123,15 +129,16 @@ app.prepare().then(() => {
       console.error(err);
       process.exit(1);
     })
-    .listen(port, () => {
+    .listen(port, hostname, () => {
       console.log(`
 ╔════════════════════════════════════════════════════════╗
 ║                                                        ║
 ║            🚀 Co.Mos Server Iniciado                   ║
 ║                                                        ║
-║  📍 Local:    http://${hostname}:${port}                    ║
+║  📍 Servidor:  http://${hostname}:${port}${' '.repeat(Math.max(0, 24 - hostname.length - port.toString().length))}║
 ║  🔌 Socket.io: ACTIVO                                  ║
-║  🌐 Modo:     ${dev ? 'DESARROLLO' : 'PRODUCCIÓN'}                      ║
+║  🌐 Modo:      ${dev ? 'DESARROLLO' : 'PRODUCCIÓN'}${' '.repeat(dev ? 26 : 21)}║
+║  🚂 Railway:   ${process.env.RAILWAY_ENVIRONMENT || 'Local'}${' '.repeat(Math.max(0, 35 - (process.env.RAILWAY_ENVIRONMENT || 'Local').length))}║
 ║                                                        ║
 ╚════════════════════════════════════════════════════════╝
       `);

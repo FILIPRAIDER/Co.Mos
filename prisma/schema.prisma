@@ -34,10 +34,14 @@ model Restaurant {
   id              String    @id @default(cuid())
   name            String
   slug            String    @unique
+  description     String?   @db.Text
+  category        String?   // Tipo de restaurante: "Comida rápida", "Gourmet", "Casual", etc.
   address         String?
   phone           String?
   email           String?
   logoUrl         String?
+  averageRating   Float     @default(0)
+  totalReviews    Int       @default(0)
   taxRate         Float     @default(0.19)
   currency        String    @default("COP")
   users           User[]

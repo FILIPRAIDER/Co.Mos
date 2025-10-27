@@ -13,7 +13,19 @@ async function getCurrentRestaurant() {
 
 export async function POST(req: Request) {
   try {
-    const { name, email, document, password, role } = await req.json();
+    const { 
+      name, 
+      email, 
+      document, 
+      password, 
+      role,
+      restaurantName,
+      restaurantDescription,
+      restaurantCategory,
+      restaurantAddress,
+      restaurantPhone,
+      restaurantLogoUrl
+    } = await req.json();
 
     if (!name || !document || !password) {
       return NextResponse.json({ message: "Datos incompletos" }, { status: 400 });
@@ -27,6 +39,11 @@ export async function POST(req: Request) {
     // Si es ADMIN, el email es requerido
     if (role === "ADMIN" && !email) {
       return NextResponse.json({ message: "El email es requerido para administradores" }, { status: 400 });
+    }
+
+    // Si es ADMIN, el nombre del restaurante es requerido
+    if (role === "ADMIN" && !restaurantName) {
+      return NextResponse.json({ message: "El nombre del restaurante es requerido" }, { status: 400 });
     }
 
     const exists = await prisma.user.findFirst({
@@ -43,8 +60,40 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Obtener el restaurante actual
-    const restaurant = await getCurrentRestaurant();
+    let restaurant;
+
+    // Si es ADMIN, crear un nuevo restaurante
+    if (role === "ADMIN") {
+      const slug = restaurantName.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
+      // Verificar que el slug sea único
+      let finalSlug = slug;
+      let counter = 1;
+      while (await prisma.restaurant.findUnique({ where: { slug: finalSlug } })) {
+        finalSlug = `${slug}-${counter}`;
+        counter++;
+      }
+
+      restaurant = await prisma.restaurant.create({
+        data: {
+          name: restaurantName,
+          slug: finalSlug,
+          description: restaurantDescription || null,
+          category: restaurantCategory || null,
+          address: restaurantAddress || null,
+          phone: restaurantPhone || null,
+          email: email,
+          logoUrl: restaurantLogoUrl || null,
+        },
+      });
+    } else {
+      // Para otros roles, obtener el restaurante actual
+      restaurant = await getCurrentRestaurant();
+    }
 
     const user = await prisma.user.create({
       data: {

@@ -130,7 +130,12 @@ export async function GET(request: Request) {
       }
     }
 
-    if (status) {
+    // Si status es "active", buscar pedidos en estado activo (no entregados ni cancelados)
+    if (status === 'active') {
+      where.status = {
+        notIn: ['ENTREGADA', 'COMPLETADA', 'PAGADA', 'CANCELADA']
+      };
+    } else if (status) {
       where.status = status;
     }
 

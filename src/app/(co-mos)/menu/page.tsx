@@ -8,6 +8,9 @@ import { hasValidRestaurantContext } from "@/lib/restaurant-context";
 import dynamic from "next/dynamic";
 
 const QRScanner = dynamic(() => import("@/components/QRScanner"), { ssr: false });
+const SessionExpirationWarning = dynamic(() => import("@/components/SessionExpirationWarning"), { ssr: false });
+const ConfirmDialog = dynamic(() => import("@/components/ConfirmDialog"), { ssr: false });
+const OrderStatusBadge = dynamic(() => import("@/components/OrderStatusBadge"), { ssr: false });
 
 type Category = {
   id: string;
@@ -57,6 +60,8 @@ function MenuContent() {
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingQRUrl, setPendingQRUrl] = useState<string | null>(null);
 
   // Prevenir hidratación errors
   useEffect(() => {
@@ -225,17 +230,38 @@ function MenuContent() {
       // Si es una ruta relativa (como /scan/...)
       else if (url.startsWith('/')) {
         setShowQRScanner(false);
-        router.push(url);
+        
+        // Si hay items en el carrito, mostrar advertencia
+        if (cart.length > 0) {
+          setPendingQRUrl(url);
+          setShowConfirmDialog(true);
+        } else {
+          router.push(url);
+        }
       }
       // Si es solo el código
       else {
         setShowQRScanner(false);
-        router.push(`/scan/${url}`);
+        
+        // Si hay items en el carrito, mostrar advertencia
+        if (cart.length > 0) {
+          setPendingQRUrl(`/scan/${url}`);
+          setShowConfirmDialog(true);
+        } else {
+          router.push(`/scan/${url}`);
+        }
       }
     } catch (error) {
       console.error('Error processing QR code:', error);
       setShowQRScanner(false);
       alert('Código QR inválido. Por favor, escanea el código QR de tu mesa.');
+    }
+  };
+
+  const handleConfirmTableChange = () => {
+    if (pendingQRUrl) {
+      router.push(pendingQRUrl);
+      setPendingQRUrl(null);
     }
   };
 
@@ -320,17 +346,32 @@ function MenuContent() {
             </div>
           </div>
           
-          <button
-            onClick={() => setShowCart(!showCart)}
-            className="relative rounded-full bg-orange-500 p-3 transition hover:bg-orange-600"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {getTotalItems() > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold">
-                {getTotalItems()}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Badge de estado del pedido */}
+            <OrderStatusBadge />
+            
+            {/* Botón para escanear QR y cambiar de mesa */}
+            <button
+              onClick={() => setShowQRScanner(true)}
+              className="rounded-full bg-white/10 p-3 transition hover:bg-white/20"
+              title="Cambiar mesa"
+            >
+              <QrCode className="h-5 w-5" />
+            </button>
+            
+            {/* Botón del carrito */}
+            <button
+              onClick={() => setShowCart(!showCart)}
+              className="relative rounded-full bg-orange-500 p-3 transition hover:bg-orange-600"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {getTotalItems() > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold">
+                  {getTotalItems()}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Búsqueda */}
@@ -578,6 +619,31 @@ function MenuContent() {
           </div>
         </div>
       )}
+
+      {/* Modal del QR Scanner */}
+      {showQRScanner && (
+        <QRScanner 
+          onScanSuccess={handleQRScan}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
+
+      {/* Diálogo de confirmación de cambio de mesa */}
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        onClose={() => {
+          setShowConfirmDialog(false);
+          setPendingQRUrl(null);
+        }}
+        onConfirm={handleConfirmTableChange}
+        title="Cambiar de mesa"
+        message="Tienes productos en tu carrito. Al cambiar de mesa, tu carrito será vaciado. ¿Deseas continuar?"
+        confirmText="Sí, cambiar mesa"
+        cancelText="Cancelar"
+      />
+
+      {/* Advertencia de expiración de sesión */}
+      <SessionExpirationWarning />
     </div>
   );
 }

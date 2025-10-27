@@ -21,20 +21,21 @@ type Product = {
   description: string | null;
   price: number;
   category: string;
+  categoryId: string | null;
   imageUrl: string | null;
   available: boolean;
   createdAt: string;
 };
 
-type Category = "ENTRADA" | "PLATO_PRINCIPAL" | "POSTRE" | "BEBIDA" | "OTRO";
-
-const CATEGORIES: { value: Category; label: string }[] = [
-  { value: "ENTRADA", label: "Entrada" },
-  { value: "PLATO_PRINCIPAL", label: "Plato Principal" },
-  { value: "POSTRE", label: "Postre" },
-  { value: "BEBIDA", label: "Bebida" },
-  { value: "OTRO", label: "Otro" },
-];
+type Category = {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  _count?: {
+    products: number;
+  };
+};
 
 export default function AdminProductosPage() {
   const router = useRouter();
@@ -42,11 +43,12 @@ export default function AdminProductosPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState<Category | "ALL">("ALL");
+  const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [uploading, setUploading] = useState(false);
   
   // Form state
@@ -54,7 +56,7 @@ export default function AdminProductosPage() {
     name: "",
     description: "",
     price: "",
-    category: "PLATO_PRINCIPAL" as Category,
+    categoryId: "",
     available: true,
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -71,6 +73,7 @@ export default function AdminProductosPage() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -84,6 +87,18 @@ export default function AdminProductosPage() {
       console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
     }
   };
 
@@ -199,7 +214,7 @@ export default function AdminProductosPage() {
       name: product.name,
       description: product.description || "",
       price: product.price.toString(),
-      category: product.category as Category,
+      categoryId: product.categoryId || (categories.length > 0 ? categories[0].id : ""),
       available: product.available,
     });
     setPreviewUrl(product.imageUrl);
@@ -212,7 +227,7 @@ export default function AdminProductosPage() {
       name: "",
       description: "",
       price: "",
-      category: "PLATO_PRINCIPAL",
+      categoryId: categories.length > 0 ? categories[0].id : "",
       available: true,
     });
     setSelectedFile(null);
@@ -222,13 +237,13 @@ export default function AdminProductosPage() {
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === "ALL" || product.category === filterCategory;
+    const matchesCategory = filterCategory === "ALL" || product.categoryId === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const productsByCategory = CATEGORIES.map(cat => ({
+  const productsByCategory = categories.map(cat => ({
     ...cat,
-    count: products.filter(p => p.category === cat.value).length,
+    count: products.filter(p => p.categoryId === cat.id).length,
   }));
 
   if (status === "loading" || loading) {
@@ -295,15 +310,15 @@ export default function AdminProductosPage() {
             </button>
             {productsByCategory.map((cat) => (
               <button
-                key={cat.value}
-                onClick={() => setFilterCategory(cat.value)}
+                key={cat.id}
+                onClick={() => setFilterCategory(cat.id)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition whitespace-nowrap ${
-                  filterCategory === cat.value
+                  filterCategory === cat.id
                     ? "bg-white text-orange-500"
                     : "bg-white/10 border border-white/30"
                 }`}
               >
-                {cat.label} ({cat.count})
+                {cat.name} ({cat.count})
               </button>
             ))}
           </div>
@@ -355,7 +370,7 @@ export default function AdminProductosPage() {
                     <div className="flex-1">
                       <h3 className="font-bold text-lg">{product.name}</h3>
                       <span className="inline-block mt-1 rounded-full bg-white/10 px-2 py-0.5 text-xs">
-                        {CATEGORIES.find(c => c.value === product.category)?.label}
+                        {categories.find(c => c.id === product.categoryId)?.name || 'Sin categoría'}
                       </span>
                     </div>
                     <p className="text-2xl font-bold text-orange-400">
@@ -487,13 +502,19 @@ export default function AdminProductosPage() {
                   Categoría *
                 </label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                   className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"
+                  required
                 >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value} className="bg-zinc-900 text-white">
-                      {cat.label}
+                  {categories.length === 0 && (
+                    <option value="" className="bg-zinc-900 text-white/60">
+                      No hay categorías disponibles
+                    </option>
+                  )}
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id} className="bg-zinc-900 text-white">
+                      {cat.name}
                     </option>
                   ))}
                 </select>

@@ -5,9 +5,32 @@ let socket: Socket | null = null;
 
 export const getSocket = () => {
   if (!socket) {
-    socket = io({
+    // Detectar URL base dinámicamente
+    const socketUrl = typeof window !== 'undefined' 
+      ? window.location.origin 
+      : process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
+
+    socket = io(socketUrl, {
       path: '/socket.io',
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      timeout: 20000,
+    });
+
+    // Logs de depuración
+    socket.on('connect_error', (error) => {
+      console.error('❌ Error de conexión Socket.IO:', error.message);
+    });
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 Reintentando conexión... Intento ${attemptNumber}`);
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+      console.log(`✅ Reconexión exitosa después de ${attemptNumber} intentos`);
     });
   }
   return socket;

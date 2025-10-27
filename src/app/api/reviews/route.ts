@@ -17,7 +17,14 @@ export async function POST(request: Request) {
     // Verificar que la orden existe
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { table: true },
+      include: { 
+        table: true,
+        session: {
+          include: {
+            orders: true
+          }
+        }
+      },
     });
 
     if (!order) {
@@ -36,24 +43,78 @@ export async function POST(request: Request) {
       },
     });
 
-    // Si la orden tiene mesa asignada, liberarla
-    if (order.tableId) {
-      await prisma.table.update({
-        where: { id: order.tableId },
-        data: { available: true },
+    // Actualizar estado de la orden a COMPLETADA
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { 
+        status: 'COMPLETADA',
+        completedAt: new Date()
+      },
+    });
+
+    // Actualizar rating promedio del restaurante
+    if (order.restaurantId) {
+      const allReviews = await prisma.review.findMany({
+        where: {
+          order: {
+            restaurantId: order.restaurantId
+          }
+        }
+      });
+      
+      const averageRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+      
+      await prisma.restaurant.update({
+        where: { id: order.restaurantId },
+        data: {
+          averageRating,
+          totalReviews: allReviews.length
+        }
       });
     }
 
-    // Actualizar estado de la orden a PAGADA (completada)
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { status: 'PAGADA' },
-    });
+    // Si la orden tiene sesión activa, verificar si todas las órdenes están completadas
+    if (order.sessionId && order.session) {
+      const sessionOrders = order.session.orders;
+      const allCompleted = sessionOrders.every(o => 
+        o.id === orderId || // Esta orden que acabamos de completar
+        o.status === 'COMPLETADA' || 
+        o.status === 'PAGADA' ||
+        o.status === 'CANCELADA'
+      );
+
+      if (allCompleted) {
+        // Cerrar la sesión
+        await prisma.tableSession.update({
+          where: { id: order.sessionId },
+          data: {
+            active: false,
+            closedAt: new Date()
+          }
+        });
+
+        // Liberar la mesa
+        if (order.tableId) {
+          await prisma.table.update({
+            where: { id: order.tableId },
+            data: { available: true },
+          });
+        }
+
+        return NextResponse.json({ 
+          success: true,
+          review,
+          message: 'Reseña guardada y mesa liberada automáticamente',
+          tableLifted: true
+        });
+      }
+    }
 
     return NextResponse.json({ 
       success: true,
       review,
-      message: order.tableId ? 'Mesa liberada exitosamente' : 'Reseña guardada'
+      message: 'Reseña guardada exitosamente',
+      tableLifted: false
     });
   } catch (error) {
     console.error('Error creating review:', error);

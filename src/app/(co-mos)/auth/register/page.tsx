@@ -9,12 +9,22 @@ import { ChevronLeft } from "lucide-react";
 type Role = "ADMIN" | "MESERO" | "COCINERO";
 
 export default function RegisterPage() {
-  const [step, setStep] = useState<"role" | "form">("role");
+  const [step, setStep] = useState<"role" | "form" | "restaurant">("role");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [document, setDocument] = useState("");
   const [password, setPassword] = useState("");
+  
+  // Restaurant data (only for ADMIN)
+  const [restaurantName, setRestaurantName] = useState("");
+  const [restaurantDescription, setRestaurantDescription] = useState("");
+  const [restaurantCategory, setRestaurantCategory] = useState("");
+  const [restaurantAddress, setRestaurantAddress] = useState("");
+  const [restaurantPhone, setRestaurantPhone] = useState("");
+  const [restaurantLogo, setRestaurantLogo] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalConfig, setModalConfig] = useState<{
@@ -29,11 +39,59 @@ export default function RegisterPage() {
     setStep("form");
   };
 
-  async function onSubmit(e: React.FormEvent) {
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setRestaurantLogo(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Si es ADMIN, mostrar formulario de restaurante
+    if (selectedRole === "ADMIN") {
+      setStep("restaurant");
+      return;
+    }
+    
+    // Para otros roles, registrar directamente
+    await submitRegistration();
+  };
+
+  async function submitRegistration() {
     if (!selectedRole) return;
     
     setLoading(true);
+    
+    // Upload logo if ADMIN
+    let logoUrl = null;
+    if (selectedRole === "ADMIN" && restaurantLogo) {
+      try {
+        const formData = new FormData();
+        formData.append('file', restaurantLogo);
+        formData.append('fileName', `restaurant-${Date.now()}`);
+        formData.append('folder', '/restaurants');
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          logoUrl = uploadData.url;
+        }
+      } catch (error) {
+        console.error('Error uploading logo:', error);
+      }
+    }
+    
     const res = await fetch("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({ 
@@ -41,7 +99,14 @@ export default function RegisterPage() {
         email: selectedRole === "ADMIN" ? email : undefined,
         document, 
         password, 
-        role: selectedRole 
+        role: selectedRole,
+        // Restaurant data (only for ADMIN)
+        restaurantName: selectedRole === "ADMIN" ? restaurantName : undefined,
+        restaurantDescription: selectedRole === "ADMIN" ? restaurantDescription : undefined,
+        restaurantCategory: selectedRole === "ADMIN" ? restaurantCategory : undefined,
+        restaurantAddress: selectedRole === "ADMIN" ? restaurantAddress : undefined,
+        restaurantPhone: selectedRole === "ADMIN" ? restaurantPhone : undefined,
+        restaurantLogoUrl: selectedRole === "ADMIN" ? logoUrl : undefined,
       }),
       headers: { "Content-Type": "application/json" },
     });
@@ -168,7 +233,7 @@ export default function RegisterPage() {
               <p className="text-gray-400">Completa tus datos</p>
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
                 <label className="block">
                   <span className="text-sm font-medium mb-2 block text-gray-300">Nombre Completo</span>
@@ -225,7 +290,7 @@ export default function RegisterPage() {
                 disabled={loading}
                 className="w-full rounded-xl bg-white text-black py-4 font-bold text-lg transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
               >
-                {loading ? "Creando cuenta..." : "Crear cuenta"}
+                {selectedRole === "ADMIN" ? "Continuar →" : (loading ? "Creando cuenta..." : "Crear cuenta")}
               </button>
             </form>
 
@@ -235,6 +300,131 @@ export default function RegisterPage() {
                 Términos y Condiciones
               </a>
             </div>
+          </div>
+        )}
+
+        {/* Restaurant Information Step (Only for ADMIN) */}
+        {step === "restaurant" && selectedRole === "ADMIN" && (
+          <div className="animate-fadeIn">
+            <div className="text-center mb-6">
+              <button
+                onClick={() => setStep("form")}
+                className="absolute left-4 top-6 rounded-full bg-zinc-900 border border-zinc-800 p-2 transition hover:bg-zinc-800"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 mb-3 text-4xl">
+                🏪
+              </div>
+              <h1 className="text-2xl font-bold mb-1">Información del Restaurante</h1>
+              <p className="text-gray-400">Completa los datos de tu negocio</p>
+            </div>
+
+            <form onSubmit={async (e) => { e.preventDefault(); await submitRegistration(); }} className="space-y-4">
+              <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+                {/* Logo Upload */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-300">
+                    Logo del Restaurante
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {logoPreview ? (
+                      <div className="relative h-20 w-20 rounded-xl overflow-hidden border-2 border-white/10">
+                        <img src={logoPreview} alt="Logo preview" className="h-full w-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="h-20 w-20 rounded-xl bg-zinc-800 border-2 border-dashed border-zinc-700 flex items-center justify-center">
+                        <span className="text-3xl">🍽️</span>
+                      </div>
+                    )}
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        className="hidden"
+                      />
+                      <span className="inline-block rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition">
+                        {logoPreview ? "Cambiar logo" : "Subir logo"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="text-sm font-medium mb-2 block text-gray-300">Nombre del Restaurante *</span>
+                  <input
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
+                    placeholder="El Sabor de Casa"
+                    value={restaurantName}
+                    onChange={(e) => setRestaurantName(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium mb-2 block text-gray-300">Descripción</span>
+                  <textarea
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition resize-none"
+                    placeholder="Describe tu restaurante..."
+                    rows={3}
+                    value={restaurantDescription}
+                    onChange={(e) => setRestaurantDescription(e.target.value)}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium mb-2 block text-gray-300">Categoría *</span>
+                  <select
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white focus:border-white focus:outline-none transition"
+                    value={restaurantCategory}
+                    onChange={(e) => setRestaurantCategory(e.target.value)}
+                    required
+                  >
+                    <option value="" className="bg-zinc-900">Selecciona una categoría</option>
+                    <option value="Comida Rápida" className="bg-zinc-900">Comida Rápida</option>
+                    <option value="Gourmet" className="bg-zinc-900">Gourmet</option>
+                    <option value="Casual" className="bg-zinc-900">Casual</option>
+                    <option value="Fine Dining" className="bg-zinc-900">Fine Dining</option>
+                    <option value="Cafetería" className="bg-zinc-900">Cafetería</option>
+                    <option value="Pizzería" className="bg-zinc-900">Pizzería</option>
+                    <option value="Parrilla" className="bg-zinc-900">Parrilla</option>
+                    <option value="Vegano/Vegetariano" className="bg-zinc-900">Vegano/Vegetariano</option>
+                    <option value="Internacional" className="bg-zinc-900">Internacional</option>
+                    <option value="Otro" className="bg-zinc-900">Otro</option>
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium mb-2 block text-gray-300">Dirección</span>
+                  <input
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
+                    placeholder="Calle 123 #45-67"
+                    value={restaurantAddress}
+                    onChange={(e) => setRestaurantAddress(e.target.value)}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-medium mb-2 block text-gray-300">Teléfono</span>
+                  <input
+                    type="tel"
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
+                    placeholder="+57 300 123 4567"
+                    value={restaurantPhone}
+                    onChange={(e) => setRestaurantPhone(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-xl bg-white text-black py-4 font-bold text-lg transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
+              >
+                {loading ? "Creando restaurante..." : "Crear cuenta"}
+              </button>
+            </form>
           </div>
         )}
       </div>

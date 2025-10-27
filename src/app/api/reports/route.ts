@@ -44,10 +44,10 @@ export async function GET(request: Request) {
     // Calculate stats
     const totalOrders = orders.length;
     const totalRevenue = orders
-      .filter((o) => o.status === "PAID")
+      .filter((o) => o.status === "PAGADA" || o.status === "COMPLETADA")
       .reduce((sum, o) => sum + o.total, 0);
     const totalTips = orders
-      .filter((o) => o.status === "PAID")
+      .filter((o) => o.status === "PAGADA" || o.status === "COMPLETADA")
       .reduce((sum, o) => sum + (o.tip || 0), 0);
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
@@ -88,7 +88,7 @@ export async function GET(request: Request) {
 
     // Revenue by day
     const revenueByDay = orders
-      .filter((o) => o.status === "PAID")
+      .filter((o) => o.status === "PAGADA" || o.status === "COMPLETADA")
       .reduce((acc, order) => {
         const date = order.createdAt.toISOString().split("T")[0];
         const existing = acc.find((item) => item.date === date);

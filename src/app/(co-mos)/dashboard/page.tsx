@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useEffect, type ComponentType, type SVGProps } from "react";
 import { useSession } from "next-auth/react";
-import { MoreVertical, Plus, Edit, XCircle, RefreshCw } from "lucide-react";
+import { MoreVertical, Plus, Edit, XCircle, RefreshCw, Table2 } from "lucide-react";
+import Link from "next/link";
+import { useAlert } from "@/hooks/useAlert";
 
 type TableStatus = "disponible" | "preparacion" | "entrega" | "atencion";
 type OrderStatus = "PENDING" | "PREPARING" | "READY" | "DELIVERED" | "PAID" | "CANCELLED";
@@ -38,12 +40,12 @@ const statusStyles: Record<TableStatus, { bar: string; label: string; text: stri
 	entrega: {
 		bar: "bg-sky-400",
 		label: "text-sky-300",
-		text: "Por entregar",
+		text: "Lista para servir",
 	},
 	atencion: {
-		bar: "bg-rose-400",
-		label: "text-rose-300",
-		text: "Requiere atención",
+		bar: "bg-purple-400",
+		label: "text-purple-300",
+		text: "Cliente comiendo",
 	},
 };
 
@@ -55,6 +57,7 @@ export default function DashboardPage() {
 	const [tables, setTables] = useState<TableData[]>([]);
 	const [orders, setOrders] = useState<any[]>([]);
 	const [loading, setLoading] = useState(true);
+	const { confirm, success, error, AlertComponent } = useAlert();
 
 	useEffect(() => {
 		fetchData();
@@ -86,20 +89,24 @@ export default function DashboardPage() {
 	const getTableStatus = (table: TableData): TableStatus => {
 		const activeOrders = orders.filter(
 			order => order.tableId === table.id && 
-			order.status !== 'PAID' && 
-			order.status !== 'CANCELLED'
+			order.status !== 'PAGADA' && 
+			order.status !== 'COMPLETADA' &&
+			order.status !== 'CANCELADA'
 		);
 
 		if (activeOrders.length === 0) return "disponible";
 		
-		const hasReady = activeOrders.some(o => o.status === 'READY');
+		// Si tiene órdenes listas para servir
+		const hasReady = activeOrders.some(o => o.status === 'LISTA');
 		if (hasReady) return "entrega";
 		
-		const hasPreparing = activeOrders.some(o => o.status === 'PREPARING');
+		// Si tiene órdenes en preparación
+		const hasPreparing = activeOrders.some(o => o.status === 'PREPARANDO' || o.status === 'PENDIENTE');
 		if (hasPreparing) return "preparacion";
 		
-		const hasDelivered = activeOrders.some(o => o.status === 'DELIVERED');
-		if (hasDelivered) return "atencion";
+		// Si todas están entregadas, cliente está comiendo
+		const allDelivered = activeOrders.every(o => o.status === 'ENTREGADA');
+		if (allDelivered && activeOrders.length > 0) return "atencion";
 		
 		return "preparacion";
 	};
@@ -107,29 +114,35 @@ export default function DashboardPage() {
 	const getTableOrders = (table: TableData) => {
 		return orders.filter(
 			order => order.tableId === table.id && 
-			order.status !== 'PAID' && 
-			order.status !== 'CANCELLED'
+			order.status !== 'PAGADA' && 
+			order.status !== 'COMPLETADA' &&
+			order.status !== 'CANCELADA'
 		);
 	};
 
 	const stats = useMemo(() => {
 		const occupiedTables = tables.filter(t => {
 			const tableOrders = orders.filter(
-				o => o.tableId === t.id && o.status !== 'PAID' && o.status !== 'CANCELLED'
+				o => o.tableId === t.id && 
+				o.status !== 'PAGADA' && 
+				o.status !== 'COMPLETADA' &&
+				o.status !== 'CANCELADA'
 			);
 			return tableOrders.length > 0;
 		}).length;
 
 		const activeOrders = orders.filter(
-			o => o.status !== 'PAID' && o.status !== 'CANCELLED'
+			o => o.status !== 'PAGADA' && 
+			o.status !== 'COMPLETADA' &&
+			o.status !== 'CANCELADA'
 		).length;
 
 		const totalRevenue = orders
-			.filter(o => o.status === 'PAID')
+			.filter(o => o.status === 'PAGADA' || o.status === 'COMPLETADA')
 			.reduce((sum, o) => sum + o.total, 0);
 
 		const totalTips = orders
-			.filter(o => o.status === 'PAID')
+			.filter(o => o.status === 'PAGADA' || o.status === 'COMPLETADA')
 			.reduce((sum, o) => sum + (o.tip || 0), 0);
 
 		return [
@@ -171,17 +184,109 @@ export default function DashboardPage() {
 	const closeDropdown = () => setOpenDropdown(null);
 
 	const handleLiftTable = async (tableId: string) => {
-		try {
-			await fetch('/api/tables', {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ id: tableId, available: true }),
-			});
-			fetchData();
-			closeDropdown();
-		} catch (error) {
-			console.error('Error lifting table:', error);
+		const table = tables.find(t => t.id === tableId);
+		if (!table) return;
+
+		const tableOrders = getTableOrders(table);
+		
+		// Verificar si tiene órdenes activas
+		if (tableOrders.length > 0) {
+			const hasActiveOrders = tableOrders.some(o => 
+				o.status !== 'ENTREGADA' && 
+				o.status !== 'COMPLETADA'
+			);
+
+			if (hasActiveOrders) {
+				error('La mesa tiene pedidos pendientes o en preparación. Completa o cancela los pedidos primero.');
+				closeDropdown();
+				return;
+			}
 		}
+
+		confirm(
+			`¿Estás seguro de levantar la Mesa #${table.number}? Esto cerrará la sesión activa.`,
+			async () => {
+				try {
+					const response = await fetch(`/api/tables/${tableId}`, {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ 
+							action: 'lift'
+						}),
+					});
+
+					if (response.ok) {
+						success(`Mesa #${table.number} levantada exitosamente`);
+						await fetchData();
+					} else {
+						const data = await response.json();
+						error(data.error || 'Error al levantar la mesa');
+					}
+				} catch (err) {
+					console.error('Error lifting table:', err);
+					error('Error al levantar la mesa. Intenta de nuevo.');
+				} finally {
+					closeDropdown();
+				}
+			},
+			'Confirmar levantar mesa',
+			'Levantar Mesa'
+		);
+	};
+
+	const handleCancelOrder = async (tableId: string) => {
+		const table = tables.find(t => t.id === tableId);
+		if (!table) return;
+
+		const tableOrders = orders.filter(
+			o => o.tableId === tableId && 
+			o.status !== 'PAGADA' && 
+			o.status !== 'COMPLETADA' &&
+			o.status !== 'CANCELADA'
+		);
+
+		if (tableOrders.length === 0) {
+			error('No hay pedidos activos para cancelar');
+			closeDropdown();
+			return;
+		}
+
+		// Si hay múltiples órdenes, mostrar selector
+		if (tableOrders.length > 1) {
+			// TODO: Implementar modal de selección
+			error('Esta mesa tiene múltiples órdenes. Selecciona una desde el detalle de la mesa.');
+			closeDropdown();
+			return;
+		}
+
+		const order = tableOrders[0];
+		
+		confirm(
+			`¿Estás seguro de cancelar la orden ${order.orderNumber} de la Mesa #${table.number}?`,
+			async () => {
+				try {
+					const response = await fetch(`/api/orders/${order.id}`, {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ status: 'CANCELADA' }),
+					});
+
+					if (response.ok) {
+						success(`Orden ${order.orderNumber} cancelada exitosamente`);
+						await fetchData();
+					} else {
+						error('Error al cancelar la orden');
+					}
+				} catch (err) {
+					console.error('Error canceling order:', err);
+					error('Error al cancelar la orden. Intenta de nuevo.');
+				} finally {
+					closeDropdown();
+				}
+			},
+			'Confirmar cancelación',
+			'Cancelar Orden'
+		);
 	};
 
 	if (loading) {
@@ -194,6 +299,7 @@ export default function DashboardPage() {
 
 	return (
 		<div className="space-y-8">
+			<AlertComponent />
 			{/* Auto refresh indicator */}
 			<div className="flex items-center justify-end">
 				<button 
@@ -293,8 +399,8 @@ export default function DashboardPage() {
 														</button>
 														<button
 															type="button"
+															onClick={() => handleCancelOrder(table.id)}
 															className="flex w-full items-center gap-3 px-4 py-2 text-sm text-rose-400 transition hover:bg-white/10"
-															onClick={closeDropdown}
 														>
 															<XCircle className="h-4 w-4" />
 															Cancelar Pedido
@@ -306,11 +412,11 @@ export default function DashboardPage() {
 									</div>
 								</header>
 
-								<div className="mt-3 flex-1 overflow-y-auto">
+								<div className="mt-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
 									{tableOrders.length > 0 ? (
 										<div className="space-y-2">
 											{tableOrders.map((order: any) => (
-												<div key={order.id} className="rounded-lg bg-white/5 p-2">
+												<div key={order.id} className="rounded-lg border border-white/10 p-2">
 													<p className="text-xs text-white/40 mb-1">Orden #{order.orderNumber}</p>
 													<ul className="space-y-1 text-sm text-white/70">
 														{order.items?.map((item: any, idx: number) => (
@@ -324,15 +430,16 @@ export default function DashboardPage() {
 															${order.total?.toLocaleString()}
 														</span>
 														<span className={`text-xs px-2 py-0.5 rounded-full ${
-															order.status === 'PENDING' ? 'bg-yellow-500/20 text-yellow-300' :
-															order.status === 'PREPARING' ? 'bg-blue-500/20 text-blue-300' :
-															order.status === 'READY' ? 'bg-green-500/20 text-green-300' :
+															order.status === 'PENDIENTE' ? 'bg-yellow-500/20 text-yellow-300' :
+															order.status === 'PREPARANDO' ? 'bg-blue-500/20 text-blue-300' :
+															order.status === 'LISTA' ? 'bg-green-500/20 text-green-300' :
+															order.status === 'ENTREGADA' ? 'bg-purple-500/20 text-purple-300' :
 															'bg-white/10 text-white/60'
 														}`}>
-															{order.status === 'PENDING' ? 'Pendiente' :
-															 order.status === 'PREPARING' ? 'Preparando' :
-															 order.status === 'READY' ? 'Listo' :
-															 order.status === 'DELIVERED' ? 'Entregado' : order.status}
+															{order.status === 'PENDIENTE' ? 'Pendiente' :
+															 order.status === 'PREPARANDO' ? 'Preparando' :
+															 order.status === 'LISTA' ? 'Listo' :
+															 order.status === 'ENTREGADA' ? 'Entregado' : order.status}
 														</span>
 													</div>
 												</div>

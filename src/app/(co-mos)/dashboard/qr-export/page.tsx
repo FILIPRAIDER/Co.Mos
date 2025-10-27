@@ -115,35 +115,43 @@ export default function QRExportPage() {
   };
 
   const downloadAllQRs = async () => {
-    const zip = new JSZip();
-    const qrFolder = zip.folder("QR-Codes-Mesas");
+    setDownloadingZip(true);
+    try {
+      const zip = new JSZip();
+      const qrFolder = zip.folder("QR-Codes-Mesas");
 
-    if (!qrFolder) return;
+      if (!qrFolder) return;
 
-    // Agregar cada QR al ZIP
-    for (const table of tables) {
-      const element = qrRefs.current.get(table.id);
-      if (!element) continue;
+      // Agregar cada QR al ZIP
+      for (const table of tables) {
+        const element = qrRefs.current.get(table.id);
+        if (!element) continue;
 
-      const canvas = element.querySelector("canvas");
-      if (canvas) {
-        // Convertir canvas a blob
-        const dataUrl = canvas.toDataURL("image/png");
-        const base64Data = dataUrl.split(",")[1];
-        
-        // Agregar al ZIP
-        qrFolder.file(`Mesa-${table.number}.png`, base64Data, { base64: true });
+        const canvas = element.querySelector("canvas");
+        if (canvas) {
+          // Convertir canvas a blob
+          const dataUrl = canvas.toDataURL("image/png");
+          const base64Data = dataUrl.split(",")[1];
+          
+          // Agregar al ZIP
+          qrFolder.file(`Mesa-${table.number}.png`, base64Data, { base64: true });
+        }
       }
-    }
 
-    // Generar y descargar el ZIP
-    const content = await zip.generateAsync({ type: "blob" });
-    const url = window.URL.createObjectURL(content);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `QR-Codes-Mesas-${new Date().toISOString().split("T")[0]}.zip`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      // Generar y descargar el ZIP
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `QR-Codes-Mesas-${new Date().toISOString().split("T")[0]}.zip`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating ZIP:", error);
+      alert("Error al generar el archivo ZIP");
+    } finally {
+      setDownloadingZip(false);
+    }
   };
 
   const printQRs = () => {
@@ -230,10 +238,20 @@ export default function QRExportPage() {
             <div className="flex gap-2">
               <button
                 onClick={downloadAllQRs}
-                className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium transition hover:bg-green-700"
+                disabled={downloadingZip}
+                className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download className="h-4 w-4" />
-                Descargar Todos
+                {downloadingZip ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    Generando ZIP...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Descargar ZIP
+                  </>
+                )}
               </button>
               <button
                 onClick={printQRs}
