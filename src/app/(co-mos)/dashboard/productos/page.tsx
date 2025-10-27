@@ -22,6 +22,10 @@ type Product = {
   price: number;
   category: string;
   categoryId: string | null;
+  categoryRef?: {
+    id: string;
+    name: string;
+  } | null;
   imageUrl: string | null;
   available: boolean;
   createdAt: string;
@@ -386,7 +390,7 @@ export default function AdminProductosPage() {
                     <div className="flex-1 min-w-0 pr-2">
                       <h3 className="font-bold text-base sm:text-lg truncate">{product.name}</h3>
                       <span className="inline-block mt-1 rounded-full bg-white/10 px-2 py-0.5 text-xs">
-                        {categories.find(c => c.id === product.categoryId)?.name || 'Sin categoría'}
+                        {product.categoryRef?.name || categories.find(c => c.id === product.categoryId)?.name || 'Sin categoría'}
                       </span>
                     </div>
                     <p className="text-xl sm:text-2xl font-bold text-orange-400 shrink-0">

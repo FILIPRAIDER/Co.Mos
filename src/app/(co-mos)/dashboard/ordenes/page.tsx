@@ -129,20 +129,30 @@ function OrdersContent() {
       return;
     }
     
+    console.log('🛒 Enviando orden:', { 
+      orderType, 
+      selectedTable, 
+      cartItems: cart.length 
+    });
+    
     try {
+      const orderData = {
+        type: orderType === 'mesa' ? 'COMER_AQUI' : 'PARA_LLEVAR',
+        tableId: orderType === 'mesa' ? selectedTable : null,
+        items: cart.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+          price: item.product.price,
+          notes: item.notes || null,
+        })),
+      };
+      
+      console.log('📤 Datos de orden:', orderData);
+      
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: orderType === 'mesa' ? 'COMER_AQUI' : 'PARA_LLEVAR',
-          tableId: orderType === 'mesa' ? selectedTable : null,
-          items: cart.map(item => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-            price: item.product.price,
-            notes: item.notes || null,
-          })),
-        }),
+        body: JSON.stringify(orderData),
       });
       
       if (response.ok) {

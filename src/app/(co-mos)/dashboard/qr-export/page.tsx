@@ -12,6 +12,7 @@ type Table = {
   number: number;
   capacity: number;
   available: boolean;
+  qrCode: string;
 };
 
 export default function QRExportPage() {
@@ -51,7 +52,7 @@ export default function QRExportPage() {
 
   const generateQRCode = (table: Table, element: HTMLDivElement) => {
     const baseUrl = window.location.origin;
-    const qrUrl = `${baseUrl}/scan/comos-mesa-${table.number}_${table.id.substring(0, 8)}`;
+    const qrUrl = `${baseUrl}/scan/${table.qrCode}`;
 
     const qrCode = new QRCodeStyling({
       width: 240,
@@ -289,7 +290,7 @@ export default function QRExportPage() {
               <div className="space-y-1 mb-3">
                 <p className="text-xs text-white/40">Escanea para ver el menú</p>
                 <p className="text-[10px] text-white/50 font-mono break-all px-2">
-                  {`${window.location.origin}/scan/comos-mesa-${table.number}_${table.id.substring(0, 8)}`}
+                  {`${window.location.origin}/scan/${table.qrCode}`}
                 </p>
               </div>
 

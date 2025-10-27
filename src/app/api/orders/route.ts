@@ -8,6 +8,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { sessionCode, tableId, items, customerName, type, notes } = body;
 
+    console.log('📝 Creando orden:', { sessionCode, tableId, itemsCount: items?.length, type });
+
     // Validaciones
     if (!items || items.length === 0) {
       return NextResponse.json(
@@ -24,6 +26,18 @@ export async function POST(request: Request) {
         include: { table: true }
       });
     } else if (tableId) {
+      // Primero verificar que la mesa existe
+      const table = await prisma.table.findUnique({
+        where: { id: tableId }
+      });
+      
+      if (!table) {
+        return NextResponse.json(
+          { error: 'Mesa no encontrada' },
+          { status: 404 }
+        );
+      }
+      
       // Buscar sesión activa por tableId
       session = await prisma.tableSession.findFirst({
         where: { 

@@ -10,6 +10,14 @@ export async function GET() {
       where: {
         restaurantId: restaurant.id,
       },
+      include: {
+        categoryRef: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      },
       orderBy: {
         name: 'asc',
       },
