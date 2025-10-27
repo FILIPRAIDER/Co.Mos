@@ -12,7 +12,39 @@ export async function PATCH(
 
     // Si es una acción de levantar mesa
     if (action === 'lift') {
-      // Cerrar todas las sesiones activas
+      // 1. Buscar todas las órdenes activas de la mesa
+      const activeSessions = await prisma.tableSession.findMany({
+        where: {
+          tableId: id,
+          active: true
+        },
+        include: {
+          orders: {
+            where: {
+              status: {
+                notIn: ['COMPLETADA', 'PAGADA', 'CANCELADA']
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Completar todas las órdenes en estado "ENTREGADA" (cliente comiendo)
+      for (const session of activeSessions) {
+        for (const order of session.orders) {
+          if (order.status === 'ENTREGADA') {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: { 
+                status: 'COMPLETADA',
+                completedAt: new Date()
+              }
+            });
+          }
+        }
+      }
+
+      // 3. Cerrar todas las sesiones activas
       await prisma.tableSession.updateMany({
         where: {
           tableId: id,
@@ -24,7 +56,7 @@ export async function PATCH(
         }
       });
 
-      // Marcar mesa como disponible
+      // 4. Marcar mesa como disponible
       const table = await prisma.table.update({
         where: { id },
         data: { available: true },

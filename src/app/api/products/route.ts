@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   try {
     const restaurant = await getCurrentRestaurant();
     const body = await request.json();
-    const { name, description, price, category, imageUrl, available } = body;
+    const { name, description, price, categoryId, imageUrl, available } = body;
 
     if (!name || !price) {
       return NextResponse.json(
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         name,
         description,
         price: parseFloat(price),
-        category: category || "PLATO_PRINCIPAL",
+        categoryId: categoryId || null,
         imageUrl,
         available: available !== undefined ? available : true,
         restaurantId: restaurant.id,

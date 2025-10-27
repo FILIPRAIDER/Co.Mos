@@ -91,8 +91,26 @@ export default function DashboardPage() {
 
 		setSocket(socketInstance);
 
+		// Socket listeners
+		if (socketInstance) {
+			// Actualizar cuando cambien estados de órdenes
+			socketInstance.on('order:statusChanged', () => {
+				console.log('🔄 Estado de orden cambió, actualizando...');
+				fetchData();
+			});
+
+			socketInstance.on('order:new', () => {
+				console.log('🆕 Nueva orden, actualizando...');
+				fetchData();
+			});
+		}
+
 		return () => {
-			socketInstance.disconnect();
+			if (socketInstance) {
+				socketInstance.off('order:statusChanged');
+				socketInstance.off('order:new');
+			}
+			socketInstance?.disconnect();
 		};
 	}, []);
 
@@ -224,22 +242,33 @@ export default function DashboardPage() {
 
 		const tableOrders = getTableOrders(table);
 		
-		// Verificar si tiene órdenes activas
-		if (tableOrders.length > 0) {
-			const hasActiveOrders = tableOrders.some(o => 
-				o.status !== 'ENTREGADA' && 
-				o.status !== 'COMPLETADA' &&
-				o.status !== 'PAGADA'
-			);
+		// Contar órdenes por estado
+		const activeOrders = tableOrders.filter(o => 
+			o.status !== 'COMPLETADA' &&
+			o.status !== 'PAGADA' &&
+			o.status !== 'CANCELADA'
+		);
 
-			if (hasActiveOrders) {
-				error('La mesa tiene pedidos pendientes o en preparación. Completa o cancela los pedidos primero.');
-				return;
-			}
+		const pendingOrders = tableOrders.filter(o => 
+			o.status === 'PENDIENTE' || 
+			o.status === 'PREPARANDO' ||
+			o.status === 'LISTA'
+		);
+
+		// Si hay órdenes en preparación, no permitir levantar
+		if (pendingOrders.length > 0) {
+			error('La mesa tiene pedidos pendientes o en preparación. Completa o cancela los pedidos primero.');
+			return;
+		}
+
+		// Mensaje apropiado según el estado
+		let confirmMessage = `¿Estás seguro de levantar la Mesa #${table.number}?`;
+		if (activeOrders.length > 0) {
+			confirmMessage = `¿Estás seguro de levantar la Mesa #${table.number}? Esto completará ${activeOrders.length} pedido(s) en estado "Cliente comiendo" y cerrará la sesión.`;
 		}
 
 		confirm(
-			`¿Estás seguro de levantar la Mesa #${table.number}? Esto cerrará la sesión activa.`,
+			confirmMessage,
 			async () => {
 				try {
 					const response = await fetch(`/api/tables/${tableId}`, {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { UtensilsCrossed, CheckCircle, ArrowLeft, Clock } from "lucide-react";
 import Image from "next/image";
+import { emitEvent } from "@/lib/socket";
 
 type OrderItem = {
   id: string;
@@ -111,6 +112,16 @@ export default function ServicioPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        
+        // Emitir evento de Socket.io
+        emitEvent('order:statusChanged', {
+          orderId,
+          status: newStatus,
+          orderNumber: data.order?.orderNumber,
+          timestamp: new Date().toISOString(),
+        });
+        
         await fetchOrders();
       }
     } catch (error) {
