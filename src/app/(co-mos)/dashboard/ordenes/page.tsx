@@ -31,6 +31,12 @@ type CartItem = {
   notes?: string;
 };
 
+type Table = {
+  id: string;
+  number: number;
+  available: boolean;
+};
+
 function OrdersContent() {
   const searchParams = useSearchParams();
   const mesaParam = searchParams.get("mesa");
@@ -38,6 +44,7 @@ function OrdersContent() {
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,16 +62,19 @@ function OrdersContent() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [categoriesRes, productsRes] = await Promise.all([
+        const [categoriesRes, productsRes, tablesRes] = await Promise.all([
           fetch('/api/categories'),
           fetch('/api/products'),
+          fetch('/api/tables'),
         ]);
         
         const categoriesData = await categoriesRes.json();
         const productsData = await productsRes.json();
+        const tablesData = await tablesRes.json();
         
         setCategories(categoriesData);
         setProducts(productsData);
+        setTables(tablesData);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -216,9 +226,9 @@ function OrdersContent() {
               className="rounded-lg border border-white/10 bg-[#1a1a1f] px-4 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
             >
               <option value="">Seleccionar mesa</option>
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                <option key={num} value={num}>
-                  Mesa #{num}
+              {tables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  Mesa #{table.number}
                 </option>
               ))}
             </select>
@@ -289,7 +299,7 @@ function OrdersContent() {
                     <div className="mb-3 flex h-32 items-center justify-center rounded-lg bg-white/5 overflow-hidden">
                       <div className="relative w-full h-full">
                         <Image
-                          src={product.imageUrl || "/placeholder-food.jpg"}
+                          src={product.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop"}
                           alt={product.name}
                           fill
                           className="object-cover"
@@ -340,7 +350,7 @@ function OrdersContent() {
                     >
                       <div className="relative h-12 w-12 shrink-0">
                         <Image
-                          src={item.product.imageUrl || "/placeholder-food.jpg"}
+                          src={item.product.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop"}
                           alt={item.product.name}
                           fill
                           className="rounded-lg object-cover"

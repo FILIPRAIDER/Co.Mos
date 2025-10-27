@@ -11,6 +11,14 @@ export async function GET(
       where: {
         id,
       },
+      include: {
+        categoryRef: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      },
     });
 
     if (!product) {
