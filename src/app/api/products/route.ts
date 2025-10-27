@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-// Helper para obtener el restaurante actual
-async function getCurrentRestaurant() {
-  const restaurant = await prisma.restaurant.findFirst();
-  if (!restaurant) {
-    throw new Error('No se encontró ningún restaurante');
-  }
-  return restaurant;
-}
+import { getCurrentRestaurant } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {

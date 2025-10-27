@@ -1,38 +1,69 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-// Helper function to get current restaurant
-async function getCurrentRestaurant() {
-  const restaurant = await prisma.restaurant.findFirst();
-  if (!restaurant) {
-    throw new Error('No se encontró ningún restaurante');
-  }
-  return restaurant;
-}
+import { getCurrentRestaurant } from '@/lib/auth-helpers';
 
 export async function POST(request: Request) {
   try {
     const restaurant = await getCurrentRestaurant();
     const body = await request.json();
-    const { sessionCode, items, customerName, type, notes } = body;
+    const { sessionCode, tableId, items, customerName, type, notes } = body;
 
     // Validaciones
-    if (!sessionCode || !items || items.length === 0) {
+    if (!items || items.length === 0) {
       return NextResponse.json(
-        { error: 'Faltan datos requeridos' },
+        { error: 'El carrito está vacío' },
         { status: 400 }
       );
     }
 
-    // Validar que la sesión existe y está activa
-    const session = await prisma.tableSession.findUnique({
-      where: { sessionCode },
-      include: { table: true }
-    });
-
-    if (!session || !session.active) {
+    // Buscar sesión activa por sessionCode o tableId
+    let session;
+    if (sessionCode) {
+      session = await prisma.tableSession.findUnique({
+        where: { sessionCode },
+        include: { table: true }
+      });
+    } else if (tableId) {
+      // Buscar sesión activa por tableId
+      session = await prisma.tableSession.findFirst({
+        where: { 
+          tableId: tableId,
+          active: true 
+        },
+        include: { table: true },
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      // Si no hay sesión activa, crear una nueva
+      if (!session) {
+        const crypto = await import('crypto');
+        const newSessionCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+        
+        session = await prisma.tableSession.create({
+          data: {
+            tableId: tableId,
+            sessionCode: newSessionCode,
+            active: true,
+          },
+          include: { table: true }
+        });
+        
+        // Marcar mesa como ocupada
+        await prisma.table.update({
+          where: { id: tableId },
+          data: { available: false },
+        });
+      }
+    } else {
       return NextResponse.json(
-        { error: 'Sesión no válida o inactiva' },
+        { error: 'Se requiere sessionCode o tableId' },
+        { status: 400 }
+      );
+    }
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'No se pudo crear o encontrar la sesión' },
         { status: 400 }
       );
     }
@@ -77,7 +108,7 @@ export async function POST(request: Request) {
         customerName: customerName || session.customerName || 'Cliente',
         type: type || 'COMER_AQUI',
         status: 'PENDIENTE',
-        notes,
+        notes: notes || null,
         subtotal,
         tax,
         total,

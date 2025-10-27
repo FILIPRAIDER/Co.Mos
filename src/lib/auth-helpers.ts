@@ -26,11 +26,11 @@ export async function getCurrentRestaurant() {
     throw new Error('Usuario no autenticado');
   }
 
-  if (!user.restaurantId) {
+  if (!user.restaurantId || !user.restaurant) {
     throw new Error('El usuario no está asociado a ningún restaurante');
   }
 
-  return user.restaurant;
+  return user.restaurant!;
 }
 
 export async function requireAuth() {

@@ -1,15 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-// Helper para obtener el restaurante (por ahora hardcoded, después por subdomain/slug)
-async function getCurrentRestaurant() {
-  // Por ahora retornamos el primer restaurante (solo hay uno)
-  const restaurant = await prisma.restaurant.findFirst();
-  if (!restaurant) {
-    throw new Error('No se encontró ningún restaurante');
-  }
-  return restaurant;
-}
+import { getCurrentRestaurant } from '@/lib/auth-helpers';
 
 export async function GET() {
   try {
@@ -82,9 +73,15 @@ export async function POST(request: Request) {
     const randomHash = crypto.randomBytes(4).toString('hex');
     const qrCode = `${restaurant.slug}-mesa-${number}-${randomHash}`;
 
+    // Detectar URL base: usar NEXTAUTH_URL si está definida, sino construir desde Railway
+    const baseUrl = process.env.NEXTAUTH_URL || 
+                    (process.env.RAILWAY_PUBLIC_DOMAIN 
+                      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
+                      : 'http://localhost:3000');
+
     // Generar imagen QR
     const qrDataUrl = await QRCode.toDataURL(
-      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/scan/${qrCode}`,
+      `${baseUrl}/scan/${qrCode}`,
       { width: 512, margin: 2 }
     );
 

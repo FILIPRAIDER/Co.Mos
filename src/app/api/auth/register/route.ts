@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
-
-// Helper function to get current restaurant
-async function getCurrentRestaurant() {
-  const restaurant = await prisma.restaurant.findFirst();
-  if (!restaurant) {
-    throw new Error('No se encontró ningún restaurante');
-  }
-  return restaurant;
-}
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 export async function POST(req: Request) {
   try {
+    const currentUser = await getCurrentUser();
+    
     const { 
       name, 
       email, 
@@ -91,8 +85,28 @@ export async function POST(req: Request) {
         },
       });
     } else {
-      // Para otros roles, obtener el restaurante actual
-      restaurant = await getCurrentRestaurant();
+      // Para otros roles (mesero, cocinero), deben ser registrados por un admin
+      if (!currentUser || currentUser.role !== 'ADMIN') {
+        return NextResponse.json({ 
+          message: "Solo administradores pueden registrar meseros y cocineros" 
+        }, { status: 403 });
+      }
+      
+      if (!currentUser.restaurantId) {
+        return NextResponse.json({ 
+          message: "El administrador no está asociado a un restaurante" 
+        }, { status: 400 });
+      }
+      
+      restaurant = await prisma.restaurant.findUnique({
+        where: { id: currentUser.restaurantId }
+      });
+      
+      if (!restaurant) {
+        return NextResponse.json({ 
+          message: "Restaurante no encontrado" 
+        }, { status: 404 });
+      }
     }
 
     const user = await prisma.user.create({

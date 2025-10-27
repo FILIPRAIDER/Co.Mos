@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, Plus, Minus, ShoppingCart, Package, Table2 } from "lucide-react";
 import Image from "next/image";
+import { useAlert } from "@/hooks/useAlert";
 
 type Category = {
   id: string;
@@ -30,9 +31,10 @@ type CartItem = {
   notes?: string;
 };
 
-function OrdenesContent() {
+function OrdersContent() {
   const searchParams = useSearchParams();
   const mesaParam = searchParams.get("mesa");
+  const { success, error, AlertComponent } = useAlert();
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -118,12 +120,12 @@ function OrdenesContent() {
 
   const handleSubmitOrder = async () => {
     if (cart.length === 0) {
-      alert('El carrito está vacío');
+      error('El carrito está vacío');
       return;
     }
     
     if (orderType === 'mesa' && !selectedTable) {
-      alert('Selecciona una mesa');
+      error('Selecciona una mesa');
       return;
     }
     
@@ -138,7 +140,7 @@ function OrdenesContent() {
             productId: item.product.id,
             quantity: item.quantity,
             price: item.product.price,
-            notes: item.notes || '',
+            notes: item.notes || null,
           })),
         }),
       });
@@ -146,16 +148,18 @@ function OrdenesContent() {
       if (response.ok) {
         const data = await response.json();
         setCart([]);
-        alert(`Orden ${data.order.orderNumber} enviada exitosamente`);
-        // Opcional: redirigir a vista de cocina o dashboard
-        window.location.href = '/dashboard';
+        success(`Orden ${data.order.orderNumber} enviada exitosamente`);
+        // Redirigir a dashboard después de 1 segundo
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
       } else {
-        const error = await response.json();
-        alert(error.error || 'Error al crear la orden');
+        const errorData = await response.json();
+        error(errorData.error || 'Error al crear la orden');
       }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al enviar la orden');
+    } catch (err) {
+      console.error('Error:', err);
+      error('Error al enviar la orden');
     }
   };
 
@@ -273,18 +277,14 @@ function OrdenesContent() {
                     className="rounded-lg border border-white/10 bg-[#1a1a1f] p-4"
                   >
                     <div className="mb-3 flex h-32 items-center justify-center rounded-lg bg-white/5 overflow-hidden">
-                      {product.imageUrl ? (
-                        <div className="relative w-full h-full">
-                          <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="text-6xl">🍔</div>
-                      )}
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={product.imageUrl || "/placeholder-food.jpg"}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
                     </div>
                     <h3 className="font-medium text-white">{product.name}</h3>
                     <p className="mt-1 text-xs text-white/50">{product.description}</p>
@@ -328,16 +328,14 @@ function OrdenesContent() {
                       key={item.product.id}
                       className="flex items-start gap-3 rounded-lg bg-white/5 p-3"
                     >
-                      {item.product.imageUrl && (
-                        <div className="relative h-12 w-12 shrink-0">
-                          <Image
-                            src={item.product.imageUrl}
-                            alt={item.product.name}
-                            fill
-                            className="rounded-lg object-cover"
-                          />
-                        </div>
-                      )}
+                      <div className="relative h-12 w-12 shrink-0">
+                        <Image
+                          src={item.product.imageUrl || "/placeholder-food.jpg"}
+                          alt={item.product.name}
+                          fill
+                          className="rounded-lg object-cover"
+                        />
+                      </div>
                       <div className="flex-1">
                         <h4 className="text-sm font-medium text-white">
                           {item.product.name}
@@ -396,6 +394,9 @@ function OrdenesContent() {
           </div>
         </div>
       </div>
+      
+      {/* Alert Component */}
+      <AlertComponent />
     </div>
   );
 }
@@ -410,7 +411,7 @@ export default function OrdenesPage() {
         </div>
       </div>
     }>
-      <OrdenesContent />
+      <OrdersContent />
     </Suspense>
   );
 }
