@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { MoreVertical, Plus, Edit, XCircle, RefreshCw, Table2 } from "lucide-react";
 import Link from "next/link";
 import { useAlert } from "@/hooks/useAlert";
+import { io, Socket } from "socket.io-client";
 
 type TableStatus = "disponible" | "preparacion" | "entrega" | "atencion";
 type OrderStatus = "PENDING" | "PREPARING" | "READY" | "DELIVERED" | "PAID" | "CANCELLED";
@@ -58,6 +59,42 @@ export default function DashboardPage() {
 	const [orders, setOrders] = useState<any[]>([]);
 	const [loading, setLoading] = useState(true);
 	const { confirm, success, error, AlertComponent } = useAlert();
+	const [socket, setSocket] = useState<Socket | null>(null);
+
+	// Configurar Socket.IO
+	useEffect(() => {
+		const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+		const socketInstance = io(socketUrl, {
+			transports: ['websocket', 'polling'],
+		});
+
+		socketInstance.on('connect', () => {
+			console.log('🔌 Conectado a Socket.IO');
+			socketInstance.emit('join:admin');
+		});
+
+		socketInstance.on('order:update', () => {
+			fetchData();
+		});
+
+		socketInstance.on('order:statusChange', () => {
+			fetchData();
+		});
+
+		socketInstance.on('table:update', () => {
+			fetchData();
+		});
+
+		socketInstance.on('session:close', () => {
+			fetchData();
+		});
+
+		setSocket(socketInstance);
+
+		return () => {
+			socketInstance.disconnect();
+		};
+	}, []);
 
 	useEffect(() => {
 		fetchData();
@@ -184,6 +221,7 @@ export default function DashboardPage() {
 	const closeDropdown = () => setOpenDropdown(null);
 
 	const handleLiftTable = async (tableId: string) => {
+		closeDropdown();
 		const table = tables.find(t => t.id === tableId);
 		if (!table) return;
 
@@ -193,12 +231,12 @@ export default function DashboardPage() {
 		if (tableOrders.length > 0) {
 			const hasActiveOrders = tableOrders.some(o => 
 				o.status !== 'ENTREGADA' && 
-				o.status !== 'COMPLETADA'
+				o.status !== 'COMPLETADA' &&
+				o.status !== 'PAGADA'
 			);
 
 			if (hasActiveOrders) {
 				error('La mesa tiene pedidos pendientes o en preparación. Completa o cancela los pedidos primero.');
-				closeDropdown();
 				return;
 			}
 		}
@@ -216,7 +254,10 @@ export default function DashboardPage() {
 					});
 
 					if (response.ok) {
-						success(`Mesa #${table.number} levantada exitosamente`);
+						// Emitir evento via Socket.IO
+						if (socket) {
+							socket.emit('table:updated', { tableNumber: table.number });
+						}
 						await fetchData();
 					} else {
 						const data = await response.json();
@@ -225,8 +266,6 @@ export default function DashboardPage() {
 				} catch (err) {
 					console.error('Error lifting table:', err);
 					error('Error al levantar la mesa. Intenta de nuevo.');
-				} finally {
-					closeDropdown();
 				}
 			},
 			'Confirmar levantar mesa',

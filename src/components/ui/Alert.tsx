@@ -91,7 +91,7 @@ export default function Alert({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-fadeIn min-h-screen">
       <div className="w-full max-w-md rounded-lg bg-zinc-900 border border-zinc-800 shadow-2xl animate-scaleIn">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">

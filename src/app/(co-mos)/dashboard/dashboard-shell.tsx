@@ -74,7 +74,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [session?.user?.role]);
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" });
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    await signOut({ callbackUrl: `${baseUrl}/auth/login` });
   };
 
   const openMobile = () => {
@@ -138,7 +139,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                           className={`
                             flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
                             ${
-                              pathname.startsWith(item.href)
+                              pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
                                 ? "bg-white/10 text-white"
                                 : "text-white/60 hover:bg-white/5 hover:text-white"
                             }
@@ -212,7 +213,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                               className={`
                                 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
                                 ${
-                                  pathname.startsWith(item.href)
+                                  pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
                                     ? "bg-white/10 text-white"
                                     : "text-white/60 hover:bg-white/5 hover:text-white"
                                 }
