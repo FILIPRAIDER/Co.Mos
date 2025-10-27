@@ -46,6 +46,8 @@ export default function AdminProductosPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedCategoryForModal, setSelectedCategoryForModal] = useState<Category | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
@@ -239,6 +241,16 @@ export default function AdminProductosPage() {
     setShowModal(true);
   };
 
+  const openCategoryModal = (category: Category) => {
+    setSelectedCategoryForModal(category);
+    setShowCategoryModal(true);
+  };
+
+  const closeCategoryModal = () => {
+    setShowCategoryModal(false);
+    setSelectedCategoryForModal(null);
+  };
+
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -314,11 +326,13 @@ export default function AdminProductosPage() {
               <button
                 key={cat.id}
                 onClick={() => setFilterCategory(cat.id)}
+                onDoubleClick={() => openCategoryModal(cat)}
                 className={`rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition whitespace-nowrap shrink-0 ${
                   filterCategory === cat.id
                     ? "bg-white text-orange-500"
-                    : "bg-white/10 border border-white/30"
+                    : "bg-white/10 border border-white/30 hover:bg-white/20"
                 }`}
+                title="Doble click para ver todos los productos"
               >
                 {cat.name} ({cat.count})
               </button>
@@ -549,6 +563,140 @@ export default function AdminProductosPage() {
                 {uploading ? "Subiendo imagen..." : editingProduct ? "Actualizar Producto" : "Crear Producto"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Products Modal */}
+      {showCategoryModal && selectedCategoryForModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 animate-fadeIn">
+          <div className="w-full sm:max-w-4xl h-[90vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl sm:rounded-2xl bg-[#1a1a24] border-t sm:border border-white/10 overflow-hidden flex flex-col animate-slideUp sm:animate-scaleIn">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10 bg-gradient-to-r from-orange-500/10 to-red-500/10">
+              <div className="flex items-center gap-3">
+                {selectedCategoryForModal.imageUrl && (
+                  <div className="relative w-12 h-12 rounded-lg overflow-hidden">
+                    <Image
+                      src={selectedCategoryForModal.imageUrl}
+                      alt={selectedCategoryForModal.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    {selectedCategoryForModal.name}
+                  </h2>
+                  {selectedCategoryForModal.description && (
+                    <p className="text-sm text-white/60 mt-1">
+                      {selectedCategoryForModal.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={closeCategoryModal}
+                className="rounded-full bg-white/10 p-2 transition hover:bg-white/20 shrink-0"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Products Grid */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {(() => {
+                const categoryProducts = products.filter(
+                  (p) => p.categoryId === selectedCategoryForModal.id
+                );
+                
+                if (categoryProducts.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <ImageIcon className="h-16 w-16 text-white/20 mb-4" />
+                      <p className="text-white/60 text-center">
+                        No hay productos en esta categoría
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categoryProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden hover:border-orange-500/50 transition-all group"
+                      >
+                        {/* Product Image */}
+                        <div className="relative h-40 sm:h-48 bg-black/30 overflow-hidden">
+                          {product.imageUrl ? (
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.name}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="h-full flex items-center justify-center">
+                              <ImageIcon className="h-12 w-12 text-white/20" />
+                            </div>
+                          )}
+                          {!product.available && (
+                            <div className="absolute top-2 right-2 rounded-full bg-red-500 px-3 py-1 text-xs font-bold">
+                              No Disponible
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-bold text-base sm:text-lg text-white flex-1 min-w-0 pr-2">
+                              {product.name}
+                            </h3>
+                            <p className="text-xl sm:text-2xl font-bold text-orange-400 shrink-0">
+                              ${product.price.toLocaleString()}
+                            </p>
+                          </div>
+                          
+                          {product.description && (
+                            <p className="text-xs sm:text-sm text-white/60 line-clamp-2">
+                              {product.description}
+                            </p>
+                          )}
+
+                          {/* Quick Actions */}
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              onClick={() => {
+                                closeCategoryModal();
+                                openEditModal(product);
+                              }}
+                              className="flex-1 rounded-lg bg-orange-500/20 border border-orange-500/50 px-3 py-2 text-xs sm:text-sm font-medium text-orange-400 transition hover:bg-orange-500/30 flex items-center justify-center gap-2"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                              Editar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 sm:p-6 border-t border-white/10 bg-[#1a1a24]">
+              <button
+                onClick={closeCategoryModal}
+                className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 font-medium text-white transition hover:bg-white/20"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
