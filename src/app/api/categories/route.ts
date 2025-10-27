@@ -2,13 +2,29 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentRestaurant } from "@/lib/auth-helpers";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const restaurant = await getCurrentRestaurant();
+    // Intentar obtener el restaurante desde la sesión (para usuarios autenticados)
+    let restaurantId: string | null = null;
+    
+    try {
+      const restaurant = await getCurrentRestaurant();
+      restaurantId = restaurant.id;
+    } catch {
+      // Si falla, intentar obtener desde el query parameter (para usuarios públicos)
+      const { searchParams } = new URL(request.url);
+      restaurantId = searchParams.get('restaurantId');
+    }
+
+    // Si no hay restaurantId, devolver array vacío en lugar de error
+    if (!restaurantId) {
+      console.log('⚠️ No restaurantId disponible en GET /api/categories');
+      return NextResponse.json([]);
+    }
     
     const categories = await prisma.category.findMany({
       where: {
-        restaurantId: restaurant.id,
+        restaurantId: restaurantId,
       },
       orderBy: {
         order: 'asc',
@@ -22,11 +38,9 @@ export async function GET() {
 
     return NextResponse.json(categories);
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return NextResponse.json(
-      { error: 'Error al obtener categorías' },
-      { status: 500 }
-    );
+    console.error('❌ Error fetching categories:', error);
+    // Devolver array vacío en lugar de objeto con error
+    return NextResponse.json([]);
   }
 }
 

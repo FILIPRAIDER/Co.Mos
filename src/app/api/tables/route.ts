@@ -71,13 +71,17 @@ export async function POST(request: Request) {
     const crypto = await import('crypto');
     const QRCode = await import('qrcode');
     const randomHash = crypto.randomBytes(4).toString('hex');
-    const qrCode = `${restaurant.slug}-mesa-${number}-${randomHash}`;
+    // Usar slug formateado correctamente
+    const restaurantSlug = restaurant.slug.includes('-') ? restaurant.slug : 'co-mos';
+    const qrCode = `${restaurantSlug}-mesa-${number}-${randomHash}`;
 
     // Detectar URL base: usar NEXTAUTH_URL si está definida, sino construir desde Railway
     const baseUrl = process.env.NEXTAUTH_URL || 
                     (process.env.RAILWAY_PUBLIC_DOMAIN 
                       ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` 
                       : 'http://localhost:3000');
+
+    console.log('🔗 Generando QR:', { baseUrl, qrCode, fullUrl: `${baseUrl}/scan/${qrCode}` });
 
     // Generar imagen QR
     const qrDataUrl = await QRCode.toDataURL(

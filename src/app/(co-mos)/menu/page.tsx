@@ -123,30 +123,43 @@ function MenuContent() {
   useEffect(() => {
     async function fetchData() {
       try {
+        // Obtener restaurantId desde localStorage o state
+        const currentRestaurantId = restaurantId || localStorage.getItem('restaurantId');
+        
+        if (!currentRestaurantId) {
+          console.warn('⚠️ No hay restaurantId disponible');
+          setCategories([]);
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
         const [categoriesRes, productsRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/products'),
+          fetch(`/api/categories?restaurantId=${currentRestaurantId}`),
+          fetch(`/api/products?restaurantId=${currentRestaurantId}`),
         ]);
         
         const categoriesData = await categoriesRes.json();
         const productsData = await productsRes.json();
         
-        setCategories(categoriesData);
-        setProducts(productsData);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+        setProducts(Array.isArray(productsData) ? productsData : []);
         
         // Seleccionar primera categoría por defecto
         if (categoriesData.length > 0) {
           setSelectedCategory(categoriesData[0].id);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('❌ Error fetching data:', error);
+        setCategories([]);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
     }
     
     fetchData();
-  }, []);
+  }, [restaurantId]);
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
