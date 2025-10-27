@@ -234,6 +234,11 @@ export default function AdminProductosPage() {
     setPreviewUrl(null);
   };
 
+  const openCreateModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -261,7 +266,7 @@ export default function AdminProductosPage() {
     <div className="min-h-screen bg-[#0a0a0f] text-white pb-6">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-black border-b border-zinc-800">
-        <div className="px-4 py-4">
+        <div className="px-3 sm:px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => router.push("/dashboard")}
@@ -271,13 +276,10 @@ export default function AdminProductosPage() {
             </button>
             <div className="flex items-center gap-2">
               <Image src="/Logo.svg" alt="co.mos" width={32} height={32} />
-              <span className="text-lg font-semibold">Productos</span>
+              <span className="text-base sm:text-lg font-semibold">Productos</span>
             </div>
             <button
-              onClick={() => {
-                resetForm();
-                setShowModal(true);
-              }}
+              onClick={openCreateModal}
               className="rounded-full bg-orange-500 p-2 transition hover:bg-orange-600"
             >
               <Plus className="h-5 w-5" />
@@ -297,10 +299,10 @@ export default function AdminProductosPage() {
           </div>
 
           {/* Category Filter */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-3 sm:-mx-4 px-3 sm:px-4">
             <button
               onClick={() => setFilterCategory("ALL")}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition whitespace-nowrap ${
+              className={`rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition whitespace-nowrap shrink-0 ${
                 filterCategory === "ALL"
                   ? "bg-white text-orange-500"
                   : "bg-white/10 border border-white/30"
@@ -312,7 +314,7 @@ export default function AdminProductosPage() {
               <button
                 key={cat.id}
                 onClick={() => setFilterCategory(cat.id)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition whitespace-nowrap ${
+                className={`rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition whitespace-nowrap shrink-0 ${
                   filterCategory === cat.id
                     ? "bg-white text-orange-500"
                     : "bg-white/10 border border-white/30"
@@ -326,25 +328,25 @@ export default function AdminProductosPage() {
       </header>
 
       {/* Products Grid */}
-      <div className="px-4 mt-6">
+      <div className="px-3 sm:px-4 mt-6">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <ImageIcon className="h-12 w-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/60">
+            <p className="text-white/60 text-sm sm:text-base">
               {searchTerm || filterCategory !== "ALL" 
                 ? "No se encontraron productos" 
                 : "No hay productos aún"}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
                 className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 overflow-hidden"
               >
                 {/* Product Image */}
-                <div className="relative h-48 bg-black/30">
+                <div className="relative h-40 sm:h-48 bg-black/30">
                   {product.imageUrl ? (
                     <Image
                       src={product.imageUrl}
@@ -354,32 +356,32 @@ export default function AdminProductosPage() {
                     />
                   ) : (
                     <div className="h-full flex items-center justify-center">
-                      <ImageIcon className="h-12 w-12 text-white/20" />
+                      <ImageIcon className="h-10 w-10 sm:h-12 sm:w-12 text-white/20" />
                     </div>
                   )}
                   {!product.available && (
-                    <div className="absolute top-2 right-2 rounded-full bg-red-500 px-3 py-1 text-xs font-bold">
+                    <div className="absolute top-2 right-2 rounded-full bg-red-500 px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-bold">
                       No Disponible
                     </div>
                   )}
                 </div>
 
                 {/* Product Info */}
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg">{product.name}</h3>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <h3 className="font-bold text-base sm:text-lg truncate">{product.name}</h3>
                       <span className="inline-block mt-1 rounded-full bg-white/10 px-2 py-0.5 text-xs">
                         {categories.find(c => c.id === product.categoryId)?.name || 'Sin categoría'}
                       </span>
                     </div>
-                    <p className="text-2xl font-bold text-orange-400">
-                      ${product.price.toFixed(2)}
+                    <p className="text-xl sm:text-2xl font-bold text-orange-400 shrink-0">
+                      ${product.price.toLocaleString()}
                     </p>
                   </div>
                   
                   {product.description && (
-                    <p className="text-sm text-white/60 mb-3 line-clamp-2">
+                    <p className="text-xs sm:text-sm text-white/60 mb-3 line-clamp-2">
                       {product.description}
                     </p>
                   )}
@@ -388,16 +390,16 @@ export default function AdminProductosPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => openEditModal(product)}
-                      className="flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium transition hover:bg-white/20 flex items-center justify-center gap-2"
+                      className="flex-1 rounded-lg bg-white/10 px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition hover:bg-white/20 flex items-center justify-center gap-1 sm:gap-2"
                     >
                       <Edit2 className="h-3 w-3" />
-                      Editar
+                      <span className="hidden sm:inline">Editar</span>
                     </button>
                     <button
                       onClick={() => deleteProduct(product.id)}
-                      className="rounded-lg bg-white/10 px-3 py-2 transition hover:bg-red-500/30"
+                      className="rounded-lg bg-white/10 px-2 sm:px-3 py-2 transition hover:bg-red-500/30"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                     </button>
                   </div>
                 </div>

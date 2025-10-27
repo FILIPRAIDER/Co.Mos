@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, type ComponentType, type SVGProps } from "react";
 import { useSession } from "next-auth/react";
-import { MoreVertical, Plus, Edit, XCircle, RefreshCw, Table2 } from "lucide-react";
+import { MoreVertical, Plus, Edit, XCircle, Table2 } from "lucide-react";
 import Link from "next/link";
 import { useAlert } from "@/hooks/useAlert";
 import { io, Socket } from "socket.io-client";
@@ -98,9 +98,6 @@ export default function DashboardPage() {
 
 	useEffect(() => {
 		fetchData();
-		// Refrescar cada 30 segundos
-		const interval = setInterval(fetchData, 30000);
-		return () => clearInterval(interval);
 	}, []);
 
 	const fetchData = async () => {
@@ -331,7 +328,7 @@ export default function DashboardPage() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<RefreshCw className="h-8 w-8 animate-spin text-orange-500" />
+				<div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
 			</div>
 		);
 	}
@@ -339,16 +336,6 @@ export default function DashboardPage() {
 	return (
 		<div className="space-y-8">
 			<AlertComponent />
-			{/* Auto refresh indicator */}
-			<div className="flex items-center justify-end">
-				<button 
-					onClick={fetchData}
-					className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300 transition"
-				>
-					<RefreshCw className="h-3 w-3" />
-					<span>Actualiza cada 30s</span>
-				</button>
-			</div>
 
 			<section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				{stats.map((stat) => (
@@ -386,7 +373,7 @@ export default function DashboardPage() {
 						return (
 							<article
 								key={`mesa-${table.number}`}
-								className="relative flex h-[280px] flex-col rounded-lg border border-white/10 bg-[#1a1a1f] p-4"
+								className="relative flex h-[320px] flex-col rounded-lg border border-white/10 bg-[#1a1a1f] p-4"
 							>
 								<header className="flex items-start justify-between">
 									<div>
@@ -431,7 +418,8 @@ export default function DashboardPage() {
 														<button
 															type="button"
 															onClick={() => handleLiftTable(table.id)}
-															className="flex w-full items-center gap-3 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+															disabled={tableOrders.length === 0}
+															className="flex w-full items-center gap-3 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
 														>
 															<Table2 className="h-4 w-4" />
 															Levantar Mesa
