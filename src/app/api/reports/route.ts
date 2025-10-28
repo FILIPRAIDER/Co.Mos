@@ -11,6 +11,9 @@ export async function GET(request: Request) {
     }
 
     const restaurantId = session.user?.restaurantId;
+    
+    // Debug logging
+    console.log("[Reports] User restaurantId:", restaurantId);
 
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "today";
@@ -26,6 +29,8 @@ export async function GET(request: Request) {
     } else if (range === "month") {
       startDate.setMonth(now.getMonth() - 1);
     }
+
+    console.log("[Reports] Date range:", { startDate, now, range });
 
     // Fetch orders in date range - filtrar por restaurante si existe
     const orders = await prisma.order.findMany({
@@ -44,6 +49,8 @@ export async function GET(request: Request) {
         },
       },
     });
+
+    console.log("[Reports] Orders found:", orders.length);
 
     // Calculate stats
     const totalOrders = orders.length;
