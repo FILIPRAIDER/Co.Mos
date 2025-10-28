@@ -89,7 +89,7 @@ export default function WelcomePage() {
               onClick={() => router.push('/auth/login')}
               className="block w-full text-neutral-300 hover:text-white transition-colors underline"
             >
-              ¿Eres trabajador? Inicia sesión aquí
+              ¿Tienes un restaurante? Inicia sesión aquí
             </button>
           </p>
         </div>

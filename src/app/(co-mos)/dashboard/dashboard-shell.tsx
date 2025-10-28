@@ -21,8 +21,8 @@ const navGroups = [
   {
     label: "Producto",
     items: [
-      { label: "Productos", href: "/dashboard/productos", icon: BoxIcon },
-      { label: "Categorías", href: "/dashboard/categorias", icon: TagIcon },
+      { label: "Productos", href: "/dashboard/productos", icon: BoxIcon, excludeRoles: ["COCINERO"] },
+      { label: "Categorías", href: "/dashboard/categorias", icon: TagIcon, excludeRoles: ["COCINERO"] },
       { label: "Inventario", href: "/dashboard/inventario", icon: PackageIcon, adminOnly: true },
     ],
   },
@@ -30,12 +30,14 @@ const navGroups = [
     label: "Operaciones",
     items: [
       { label: "Vista Cocina", href: "/cocina", icon: ChefHatIcon },
-      { label: "Vista Servicio", href: "/servicio", icon: ServerIcon },
+      { label: "Vista Servicio", href: "/servicio", icon: ServerIcon, excludeRoles: ["COCINERO"] },
     ],
   },
   {
     label: "Herramientas",
     items: [
+      { label: "Usuarios", href: "/dashboard/usuarios", icon: UsersIcon, adminOnly: true },
+      { label: "Restaurante", href: "/dashboard/restaurante", icon: StoreIcon, adminOnly: true },
       { label: "Exportar QR", href: "/dashboard/qr-export", icon: QrCodeIcon, adminOnly: true },
     ],
   },
@@ -121,9 +123,17 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </div>
         <nav className="mt-8 space-y-6">
           {navGroups.map((group) => {
-            const filteredItems = group.items.filter(
-              (item) => !item.adminOnly || session?.user?.role === "ADMIN"
-            );
+            const filteredItems = group.items.filter((item: any) => {
+              // Filtrar por adminOnly
+              if (item.adminOnly && session?.user?.role !== "ADMIN") {
+                return false;
+              }
+              // Filtrar por excludeRoles
+              if (item.excludeRoles && item.excludeRoles.includes(session?.user?.role)) {
+                return false;
+              }
+              return true;
+            });
             if (filteredItems.length === 0) return null;
             
             return (
@@ -197,9 +207,17 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
             <nav className="mt-6 space-y-6">
               {navGroups.map((group) => {
-                const filteredItems = group.items.filter(
-                  (item) => !item.adminOnly || session?.user?.role === "ADMIN"
-                );
+                const filteredItems = group.items.filter((item: any) => {
+                  // Filtrar por adminOnly
+                  if (item.adminOnly && session?.user?.role !== "ADMIN") {
+                    return false;
+                  }
+                  // Filtrar por excludeRoles
+                  if (item.excludeRoles && item.excludeRoles.includes(session?.user?.role)) {
+                    return false;
+                  }
+                  return true;
+                });
                 if (filteredItems.length === 0) return null;
                 
                 return (
@@ -465,6 +483,25 @@ function HistoryIcon(props: IconProps) {
       <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M3 3v5h5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M12 7v5l4 2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function UsersIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function StoreIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" {...props}>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

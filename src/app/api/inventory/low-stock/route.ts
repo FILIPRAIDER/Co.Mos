@@ -16,25 +16,12 @@ export async function GET() {
       return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
     }
 
-    // Get items where quantity <= minStock
-    const lowStockItems = await prisma.inventoryItem.findMany({
+    // Get all items with minStock defined
+    const allItems = await prisma.inventoryItem.findMany({
       where: {
-        AND: [
-          {
-            minStock: {
-              not: null,
-            },
-          },
-          {
-            OR: [
-              {
-                quantity: {
-                  lte: prisma.inventoryItem.fields.minStock,
-                },
-              },
-            ],
-          },
-        ],
+        minStock: {
+          not: null,
+        },
       },
       orderBy: {
         quantity: "asc",
@@ -42,7 +29,7 @@ export async function GET() {
     });
 
     // Filter in JavaScript since Prisma doesn't support column comparison in where clause
-    const filteredItems = lowStockItems.filter(
+    const filteredItems = allItems.filter(
       (item: InventoryItem) => item.minStock !== null && item.quantity <= item.minStock
     );
 

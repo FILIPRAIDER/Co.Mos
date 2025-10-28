@@ -4,19 +4,17 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Modal from "@/components/Modal";
-import { ChevronLeft } from "lucide-react";
-
-type Role = "ADMIN" | "MESERO" | "COCINERO";
+import { ChevronLeft, Upload, Store, User, Mail, Lock, FileText, MapPin, Phone } from "lucide-react";
 
 export default function RegisterPage() {
-  const [step, setStep] = useState<"role" | "form" | "restaurant">("role");
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [step, setStep] = useState<"personal" | "restaurant">("personal");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [document, setDocument] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   
-  // Restaurant data (only for ADMIN)
+  // Restaurant data
   const [restaurantName, setRestaurantName] = useState("");
   const [restaurantDescription, setRestaurantDescription] = useState("");
   const [restaurantCategory, setRestaurantCategory] = useState("");
@@ -34,11 +32,6 @@ export default function RegisterPage() {
   }>({ type: "success", title: "", message: "" });
   const router = useRouter();
 
-  const handleRoleSelect = (role: Role) => {
-    setSelectedRole(role);
-    setStep("form");
-  };
-
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -51,27 +44,44 @@ export default function RegisterPage() {
     }
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handlePersonalInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Si es ADMIN, mostrar formulario de restaurante
-    if (selectedRole === "ADMIN") {
-      setStep("restaurant");
+    if (password !== confirmPassword) {
+      setModalConfig({
+        type: "error",
+        title: "Error",
+        message: "Las contraseñas no coinciden",
+      });
+      setShowModal(true);
       return;
     }
     
-    // Para otros roles, registrar directamente
+    if (password.length < 6) {
+      setModalConfig({
+        type: "error",
+        title: "Error",
+        message: "La contraseña debe tener al menos 6 caracteres",
+      });
+      setShowModal(true);
+      return;
+    }
+    
+    // Avanzar al paso de restaurante
+    setStep("restaurant");
+  };
+
+  const handleRestaurantSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     await submitRegistration();
   };
 
   async function submitRegistration() {
-    if (!selectedRole) return;
-    
     setLoading(true);
     
-    // Upload logo if ADMIN
+    // Upload logo if provided
     let logoUrl = null;
-    if (selectedRole === "ADMIN" && restaurantLogo) {
+    if (restaurantLogo) {
       try {
         const formData = new FormData();
         formData.append('file', restaurantLogo);
@@ -96,265 +106,253 @@ export default function RegisterPage() {
       method: "POST",
       body: JSON.stringify({ 
         name, 
-        email: selectedRole === "ADMIN" ? email : undefined,
+        email,
         document, 
         password, 
-        role: selectedRole,
-        // Restaurant data (only for ADMIN)
-        restaurantName: selectedRole === "ADMIN" ? restaurantName : undefined,
-        restaurantDescription: selectedRole === "ADMIN" ? restaurantDescription : undefined,
-        restaurantCategory: selectedRole === "ADMIN" ? restaurantCategory : undefined,
-        restaurantAddress: selectedRole === "ADMIN" ? restaurantAddress : undefined,
-        restaurantPhone: selectedRole === "ADMIN" ? restaurantPhone : undefined,
-        restaurantLogoUrl: selectedRole === "ADMIN" ? logoUrl : undefined,
+        role: "ADMIN",
+        restaurantName,
+        restaurantDescription,
+        restaurantCategory,
+        restaurantAddress,
+        restaurantPhone,
+        restaurantLogo: logoUrl,
       }),
       headers: { "Content-Type": "application/json" },
     });
+
     setLoading(false);
 
     if (res.ok) {
       setModalConfig({
         type: "success",
-        title: "¡Cuenta creada exitosamente!",
-        message: "Tu cuenta ha sido creada. Ya puedes iniciar sesión con tus credenciales.",
+        title: "Registro Exitoso",
+        message: "Tu cuenta y restaurante han sido creados. Serás redirigido al inicio de sesión.",
       });
       setShowModal(true);
       setTimeout(() => {
         router.push("/auth/login");
       }, 2000);
     } else {
-      const j = await res.json().catch(() => ({}));
+      const data = await res.json();
       setModalConfig({
         type: "error",
-        title: "Error al registrar",
-        message: j?.message ?? "No se pudo completar el registro. Por favor intenta de nuevo.",
+        title: "Error en el Registro",
+        message: data.error || "Hubo un problema al crear tu cuenta. Intenta de nuevo.",
       });
       setShowModal(true);
     }
   }
 
   return (
-    <main className="min-h-screen bg-black text-white px-4 py-6 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          {step === "form" && (
-            <button
-              onClick={() => setStep("role")}
-              className="rounded-full bg-zinc-900 border border-zinc-800 p-2 transition hover:bg-zinc-800"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          )}
-          <div className="flex items-center gap-2">
-            <Image src="/Logo.svg" alt="co.mos" width={40} height={40} />
-            <span className="text-2xl font-bold">co.mos</span>
-          </div>
-          {step === "form" && <div className="w-9" />}
+    <div className="relative flex min-h-screen items-center justify-center bg-[#0a0a0f] px-4 py-12 sm:px-6 lg:px-8">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.03),transparent_50%)]" />
+      
+      <div className="relative w-full max-w-2xl">
+        {/* Logo */}
+        <div className="mb-8 text-center">
+          <Image
+            src="/logo.png"
+            alt="Logo"
+            width={120}
+            height={120}
+            className="mx-auto mb-4"
+          />
+          <h1 className="text-3xl font-bold text-white">
+            Crea tu Restaurante
+          </h1>
+          <p className="mt-2 text-sm text-white/60">
+            Registra tu negocio y comienza a gestionar tus operaciones
+          </p>
         </div>
 
-        {/* Role Selection Step */}
-        {step === "role" && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold mb-2 drop-shadow-lg">Únete al equipo</h1>
-              <p className="text-white/90 text-lg">¿Cuál es tu rol?</p>
+        {/* Progress Indicator */}
+        <div className="mb-8 flex items-center justify-center gap-2">
+          <div className={`flex items-center gap-2 ${step === "personal" ? "text-orange-500" : "text-green-500"}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+              step === "personal" ? "border-orange-500 bg-orange-500/10" : "border-green-500 bg-green-500/10"
+            }`}>
+              <User className="h-4 w-4" />
             </div>
-
-            <div className="space-y-4">
-              {/* Admin Card */}
-              <button
-                onClick={() => handleRoleSelect("ADMIN")}
-                className="w-full group relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 p-6 transition-all hover:bg-zinc-800 hover:border-white hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div className="relative flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-3xl">
-                    👑
-                  </div>
-                  <div className="text-left flex-1">
-                    <h3 className="text-xl font-bold mb-1">Dueño del Restaurante</h3>
-                    <p className="text-sm text-gray-400">Acceso completo al sistema</p>
-                  </div>
-                </div>
-              </button>
-
-              {/* Waiter Card */}
-              <button
-                onClick={() => handleRoleSelect("MESERO")}
-                className="w-full group relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 p-6 transition-all hover:bg-zinc-800 hover:border-white hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div className="relative flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-3xl">
-                    🧑‍💼
-                  </div>
-                  <div className="text-left flex-1">
-                    <h3 className="text-xl font-bold mb-1">Mesero</h3>
-                    <p className="text-sm text-gray-400">Gestión de mesas y servicio</p>
-                  </div>
-                </div>
-              </button>
-
-              {/* Chef Card */}
-              <button
-                onClick={() => handleRoleSelect("COCINERO")}
-                className="w-full group relative overflow-hidden rounded-2xl bg-zinc-900 border border-zinc-800 p-6 transition-all hover:bg-zinc-800 hover:border-white hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div className="relative flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-3xl">
-                    👨‍🍳
-                  </div>
-                  <div className="text-left flex-1">
-                    <h3 className="text-xl font-bold mb-1">Cocinero</h3>
-                    <p className="text-sm text-gray-400">Preparación de pedidos</p>
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            <p className="mt-8 text-center text-sm text-gray-400">
-              ¿Ya tienes una cuenta?{" "}
-              <a className="font-semibold text-white hover:text-gray-300 transition" href="/auth/login">
-                Inicia sesión
-              </a>
-            </p>
+            <span className="text-sm font-medium">Datos Personales</span>
           </div>
-        )}
-
-        {/* Registration Form Step */}
-        {step === "form" && selectedRole && (
-          <div className="animate-fadeIn">
-            <div className="text-center mb-6">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 mb-3 text-4xl">
-                {selectedRole === "ADMIN" ? "👑" : selectedRole === "MESERO" ? "🧑‍💼" : "👨‍🍳"}
-              </div>
-              <h1 className="text-2xl font-bold mb-1">
-                Registro como {selectedRole === "ADMIN" ? "Dueño" : selectedRole === "MESERO" ? "Mesero" : "Cocinero"}
-              </h1>
-              <p className="text-gray-400">Completa tus datos</p>
+          <div className="h-px w-12 bg-zinc-800" />
+          <div className={`flex items-center gap-2 ${step === "restaurant" ? "text-orange-500" : "text-white/40"}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+              step === "restaurant" ? "border-orange-500 bg-orange-500/10" : "border-zinc-700 bg-zinc-900"
+            }`}>
+              <Store className="h-4 w-4" />
             </div>
+            <span className="text-sm font-medium">Restaurante</span>
+          </div>
+        </div>
 
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
-                <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Nombre Completo</span>
-                  <input
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
-                    placeholder="Juan Pérez"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </label>
-
-                {selectedRole === "ADMIN" && (
+        {/* Form Card */}
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 sm:p-8 backdrop-blur-sm">
+          {step === "personal" && (
+            <form onSubmit={handlePersonalInfoSubmit} className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-white mb-6">
+                  Información Personal
+                </h2>
+                
+                <div className="space-y-4">
                   <label className="block">
-                    <span className="text-sm font-medium mb-2 block text-gray-300">Correo Electrónico</span>
+                    <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <User className="h-4 w-4" />
+                      Nombre Completo *
+                    </span>
+                    <input
+                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
+                      placeholder="Juan Pérez"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Mail className="h-4 w-4" />
+                      Email *
+                    </span>
                     <input
                       type="email"
-                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
-                      placeholder="juan@restaurante.com"
+                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
+                      placeholder="juan@ejemplo.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
                   </label>
-                )}
 
-                <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Cédula</span>
-                  <input
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
-                    placeholder="1234567890"
-                    value={document}
-                    onChange={(e) => setDocument(e.target.value)}
-                    required
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Contraseña</span>
-                  <input
-                    type="password"
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
-                    placeholder="Mínimo 6 caracteres"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-xl bg-white text-black py-4 font-bold text-lg transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
-              >
-                {selectedRole === "ADMIN" ? "Continuar →" : (loading ? "Creando cuenta..." : "Crear cuenta")}
-              </button>
-            </form>
-
-            <div className="mt-6 flex items-center justify-center text-xs text-gray-500">
-              Al registrarte, aceptas nuestros{" "}
-              <a href="/terminos" className="ml-1 underline hover:text-gray-400">
-                Términos y Condiciones
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Restaurant Information Step (Only for ADMIN) */}
-        {step === "restaurant" && selectedRole === "ADMIN" && (
-          <div className="animate-fadeIn">
-            <div className="text-center mb-6">
-              <button
-                onClick={() => setStep("form")}
-                className="absolute left-4 top-6 rounded-full bg-zinc-900 border border-zinc-800 p-2 transition hover:bg-zinc-800"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 mb-3 text-4xl">
-                🏪
-              </div>
-              <h1 className="text-2xl font-bold mb-1">Información del Restaurante</h1>
-              <p className="text-gray-400">Completa los datos de tu negocio</p>
-            </div>
-
-            <form onSubmit={async (e) => { e.preventDefault(); await submitRegistration(); }} className="space-y-4">
-              <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
-                {/* Logo Upload */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">
-                    Logo del Restaurante
+                  <label className="block">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <FileText className="h-4 w-4" />
+                      Cédula *
+                    </span>
+                    <input
+                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
+                      placeholder="1234567890"
+                      value={document}
+                      onChange={(e) => setDocument(e.target.value)}
+                      required
+                    />
                   </label>
-                  <div className="flex items-center gap-4">
-                    {logoPreview ? (
-                      <div className="relative h-20 w-20 rounded-xl overflow-hidden border-2 border-white/10">
-                        <img src={logoPreview} alt="Logo preview" className="h-full w-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="h-20 w-20 rounded-xl bg-zinc-800 border-2 border-dashed border-zinc-700 flex items-center justify-center">
-                        <span className="text-3xl">🍽️</span>
-                      </div>
-                    )}
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="hidden"
-                      />
-                      <span className="inline-block rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition">
-                        {logoPreview ? "Cambiar logo" : "Subir logo"}
-                      </span>
-                    </label>
+
+                  <label className="block">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Lock className="h-4 w-4" />
+                      Contraseña *
+                    </span>
+                    <input
+                      type="password"
+                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Lock className="h-4 w-4" />
+                      Confirmar Contraseña *
+                    </span>
+                    <input
+                      type="password"
+                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => router.push("/auth/login")}
+                  className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-orange-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-orange-600"
+                >
+                  Continuar
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === "restaurant" && (
+            <form onSubmit={handleRestaurantSubmit} className="space-y-6">
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setStep("personal")}
+                  className="rounded-lg bg-zinc-800 border border-zinc-700 p-2 transition hover:bg-zinc-700"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <h2 className="text-xl font-semibold text-white">
+                  Información del Restaurante
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                {/* Logo Upload */}
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                  <span className="mb-3 block text-sm font-medium text-gray-300">
+                    Logo del Restaurante
+                  </span>
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="relative h-24 w-24 rounded-xl overflow-hidden border-2 border-zinc-700 bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      {logoPreview ? (
+                        <Image
+                          src={logoPreview}
+                          alt="Logo preview"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Store className="h-10 w-10 text-white/20" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          className="hidden"
+                        />
+                        <span className="inline-flex items-center gap-2 rounded-lg bg-zinc-700 border border-zinc-600 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-600 transition">
+                          <Upload className="h-4 w-4" />
+                          {logoPreview ? "Cambiar logo" : "Subir logo"}
+                        </span>
+                      </label>
+                      <p className="mt-2 text-xs text-white/40">
+                        Recomendado: 512x512px, PNG o JPG
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Nombre del Restaurante *</span>
+                  <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                    <Store className="h-4 w-4" />
+                    Nombre del Restaurante *
+                  </span>
                   <input
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
                     placeholder="El Sabor de Casa"
                     value={restaurantName}
                     onChange={(e) => setRestaurantName(e.target.value)}
@@ -363,9 +361,11 @@ export default function RegisterPage() {
                 </label>
 
                 <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Descripción</span>
+                  <span className="mb-2 block text-sm font-medium text-gray-300">
+                    Descripción
+                  </span>
                   <textarea
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition resize-none"
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition resize-none"
                     placeholder="Describe tu restaurante..."
                     rows={3}
                     value={restaurantDescription}
@@ -374,61 +374,98 @@ export default function RegisterPage() {
                 </label>
 
                 <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Categoría *</span>
+                  <span className="mb-2 block text-sm font-medium text-gray-300">
+                    Categoría
+                  </span>
                   <select
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white focus:border-white focus:outline-none transition"
+                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white focus:border-orange-500 focus:outline-none transition"
                     value={restaurantCategory}
                     onChange={(e) => setRestaurantCategory(e.target.value)}
-                    required
                   >
-                    <option value="" className="bg-zinc-900">Selecciona una categoría</option>
-                    <option value="Comida Rápida" className="bg-zinc-900">Comida Rápida</option>
-                    <option value="Gourmet" className="bg-zinc-900">Gourmet</option>
-                    <option value="Casual" className="bg-zinc-900">Casual</option>
-                    <option value="Fine Dining" className="bg-zinc-900">Fine Dining</option>
-                    <option value="Cafetería" className="bg-zinc-900">Cafetería</option>
-                    <option value="Pizzería" className="bg-zinc-900">Pizzería</option>
-                    <option value="Parrilla" className="bg-zinc-900">Parrilla</option>
-                    <option value="Vegano/Vegetariano" className="bg-zinc-900">Vegano/Vegetariano</option>
-                    <option value="Internacional" className="bg-zinc-900">Internacional</option>
-                    <option value="Otro" className="bg-zinc-900">Otro</option>
+                    <option value="">Selecciona una categoría</option>
+                    <option value="Comida Rápida">Comida Rápida</option>
+                    <option value="Gourmet">Gourmet</option>
+                    <option value="Casual">Casual</option>
+                    <option value="Fine Dining">Fine Dining</option>
+                    <option value="Cafetería">Cafetería</option>
+                    <option value="Pizzería">Pizzería</option>
+                    <option value="Parrilla">Parrilla</option>
+                    <option value="Vegano/Vegetariano">Vegano/Vegetariano</option>
+                    <option value="Internacional">Internacional</option>
+                    <option value="Otro">Otro</option>
                   </select>
                 </label>
 
-                <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Dirección</span>
-                  <input
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
-                    placeholder="Calle 123 #45-67"
-                    value={restaurantAddress}
-                    onChange={(e) => setRestaurantAddress(e.target.value)}
-                  />
-                </label>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <MapPin className="h-4 w-4" />
+                      Dirección
+                    </span>
+                    <input
+                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
+                      placeholder="Calle 123 #45-67"
+                      value={restaurantAddress}
+                      onChange={(e) => setRestaurantAddress(e.target.value)}
+                    />
+                  </label>
 
-                <label className="block">
-                  <span className="text-sm font-medium mb-2 block text-gray-300">Teléfono</span>
-                  <input
-                    type="tel"
-                    className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-white focus:outline-none transition"
-                    placeholder="+57 300 123 4567"
-                    value={restaurantPhone}
-                    onChange={(e) => setRestaurantPhone(e.target.value)}
-                  />
-                </label>
+                  <label className="block">
+                    <span className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Phone className="h-4 w-4" />
+                      Teléfono
+                    </span>
+                    <input
+                      type="tel"
+                      className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none transition"
+                      placeholder="+57 300 123 4567"
+                      value={restaurantPhone}
+                      onChange={(e) => setRestaurantPhone(e.target.value)}
+                    />
+                  </label>
+                </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-xl bg-white text-black py-4 font-bold text-lg transition hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed shadow-xl"
-              >
-                {loading ? "Creando restaurante..." : "Crear cuenta"}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep("personal")}
+                  className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-700"
+                >
+                  Atrás
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 rounded-lg bg-orange-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      Creando cuenta...
+                    </span>
+                  ) : (
+                    "Crear Restaurante"
+                  )}
+                </button>
+              </div>
             </form>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Login Link */}
+        <p className="mt-6 text-center text-sm text-white/60">
+          ¿Ya tienes una cuenta?{" "}
+          <button
+            onClick={() => router.push("/auth/login")}
+            className="font-medium text-orange-500 hover:text-orange-400 transition"
+          >
+            Inicia sesión aquí
+          </button>
+        </p>
       </div>
 
+      {/* Modal */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
@@ -436,6 +473,6 @@ export default function RegisterPage() {
         message={modalConfig.message}
         type={modalConfig.type}
       />
-    </main>
+    </div>
   );
 }
