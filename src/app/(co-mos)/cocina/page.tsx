@@ -296,8 +296,8 @@ export default function CocinaPage() {
         </div>
       </header>
 
-      {/* Orders List */}
-      <div className="px-4 py-4 space-y-4">
+      {/* Orders Grid */}
+      <div className="px-4 py-4">
         {filteredOrders.length === 0 ? (
           <div className="py-12 text-center">
             <div className="mb-4 text-6xl">👨‍🍳</div>
@@ -305,7 +305,8 @@ export default function CocinaPage() {
             <p className="text-sm text-white/60">No hay órdenes para preparar</p>
           </div>
         ) : (
-          filteredOrders.map((order) => {
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filteredOrders.map((order) => {
             const timeElapsed = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 1000 / 60);
             const isUrgent = timeElapsed > 10;
             
@@ -461,7 +462,8 @@ export default function CocinaPage() {
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
         )}
       </div>
     </div>

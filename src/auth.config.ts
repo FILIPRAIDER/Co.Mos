@@ -28,6 +28,11 @@ export const authOptions: NextAuthOptions = {
         
         if (!user) return null;
 
+        // Verificar si el usuario está activo
+        if (!user.active) {
+          throw new Error("Usuario desactivado");
+        }
+
         const ok = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!ok) return null;
 
@@ -37,6 +42,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email ?? undefined,
           role: user.role,
           document: user.document,
+          mustChangePassword: user.mustChangePassword,
         } as any;
       },
     }),
@@ -46,6 +52,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = (user as any).role;
         token.document = (user as any).document;
+        token.mustChangePassword = (user as any).mustChangePassword;
       }
       return token;
     },
@@ -53,6 +60,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).role = token.role;
         (session.user as any).document = token.document;
+        (session.user as any).mustChangePassword = token.mustChangePassword;
       }
       return session;
     },

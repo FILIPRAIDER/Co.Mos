@@ -92,8 +92,9 @@ export const WelcomeEmail = ({
             </Section>
 
             <Text style={warningText}>
-              ⚠️ <strong>Importante:</strong> Por seguridad, te recomendamos cambiar tu
-              contraseña después de iniciar sesión por primera vez.
+              ⚠️ <strong>Importante:</strong> Por seguridad, <strong>debes cambiar tu
+              contraseña</strong> al iniciar sesión por primera vez. El sistema te solicitará
+              crear una nueva contraseña más segura.
             </Text>
 
             {/* CTA Button */}

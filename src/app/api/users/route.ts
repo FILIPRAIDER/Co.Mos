@@ -138,6 +138,7 @@ export async function POST(request: Request) {
         passwordHash,
         role,
         restaurantId: currentUser.restaurantId,
+        mustChangePassword: true, // Forzar cambio de contraseña en primer login
       },
       select: {
         id: true,

@@ -222,7 +222,7 @@ export default function ServicioPage() {
       {/* Content */}
       <div className="px-4 py-4">
         {view === "orders" ? (
-          <div className="space-y-4">
+          <div>
             {orders.length === 0 ? (
               <div className="py-12 text-center">
                 <div className="mb-4 text-6xl">🍽️</div>
@@ -230,7 +230,8 @@ export default function ServicioPage() {
                 <p className="text-sm text-white/60">No hay órdenes pendientes de servir</p>
               </div>
             ) : (
-              orders.map((order) => (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {orders.map((order) => (
                 <div
                   key={order.id}
                   className={`rounded-lg border p-4 ${
@@ -306,7 +307,8 @@ export default function ServicioPage() {
                     </button>
                   )}
                 </div>
-              ))
+              ))}
+              </div>
             )}
           </div>
         ) : (
