@@ -43,6 +43,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           document: user.document,
           mustChangePassword: user.mustChangePassword,
+          restaurantId: user.restaurantId,
         } as any;
       },
     }),
@@ -53,6 +54,7 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as any).role;
         token.document = (user as any).document;
         token.mustChangePassword = (user as any).mustChangePassword;
+        token.restaurantId = (user as any).restaurantId;
       }
       return token;
     },
@@ -61,6 +63,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role;
         (session.user as any).document = token.document;
         (session.user as any).mustChangePassword = token.mustChangePassword;
+        (session.user as any).restaurantId = token.restaurantId;
       }
       return session;
     },

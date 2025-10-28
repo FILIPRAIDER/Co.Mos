@@ -8,6 +8,7 @@ declare module "next-auth" {
       role?: "CLIENTE" | "MESERO" | "COCINERO" | "ADMIN";
       document?: string;
       mustChangePassword?: boolean;
+      restaurantId?: string;
     };
   }
 
@@ -17,6 +18,7 @@ declare module "next-auth" {
     role?: "CLIENTE" | "MESERO" | "COCINERO" | "ADMIN";
     document?: string;
     mustChangePassword?: boolean;
+    restaurantId?: string;
   }
 }
 
@@ -25,5 +27,6 @@ declare module "next-auth/jwt" {
     role?: "CLIENTE" | "MESERO" | "COCINERO" | "ADMIN";
     document?: string;
     mustChangePassword?: boolean;
+    restaurantId?: string;
   }
 }

@@ -10,6 +10,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const restaurantId = session.user?.restaurantId;
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: "Restaurante no encontrado" },
+        { status: 400 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "today";
 
@@ -25,9 +33,10 @@ export async function GET(request: Request) {
       startDate.setMonth(now.getMonth() - 1);
     }
 
-    // Fetch orders in date range
+    // Fetch orders in date range - SOLO del restaurante del usuario
     const orders = await prisma.order.findMany({
       where: {
+        restaurantId: restaurantId,
         createdAt: {
           gte: startDate,
           lte: now,
