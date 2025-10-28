@@ -106,7 +106,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   return (
     <div className="flex min-h-dvh bg-[#0a0a0f] text-neutral-100">
       <aside 
-        className={`hidden shrink-0 flex-col border-r border-white/5 bg-[#1a1a1f] px-4 py-6 lg:flex lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto transition-all duration-300 ${
+        className={`hidden shrink-0 flex-col border-r border-white/5 bg-[#1a1a1f] px-4 py-6 lg:flex lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto custom-scrollbar transition-all duration-300 ${
           sidebarCollapsed ? "w-20" : "w-64"
         }`}
       >
@@ -191,7 +191,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             onClick={closeMobile} 
             aria-hidden="true" 
           />
-          <div className={`relative ml-0 flex h-full w-72 flex-col bg-[#1a1a1f] px-4 py-6 shadow-xl transform transition-transform duration-300 ease-out ${
+          <div className={`relative ml-0 flex h-full w-72 flex-col bg-[#1a1a1f] px-4 py-6 shadow-xl overflow-y-auto custom-scrollbar transform transition-transform duration-300 ease-out ${
             isAnimating ? 'translate-x-0' : '-translate-x-full'
           }`}>
             <div className="flex items-center justify-between">
