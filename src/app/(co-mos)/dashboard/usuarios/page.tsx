@@ -13,6 +13,8 @@ import {
   Edit,
   Ban,
   CheckCheck,
+  Search,
+  Filter,
 } from "lucide-react";
 import Modal from "@/components/Modal";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -43,6 +45,8 @@ export default function UsersPage() {
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [newUser, setNewUser] = useState<UserFormData>({
     name: "",
     email: "",
@@ -260,6 +264,24 @@ export default function UsersPage() {
     return roles[role] || role;
   };
 
+  // Filtrar usuarios
+  const filteredUsers = users.filter((user) => {
+    // Filtro por texto de búsqueda
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchLower) ||
+      user.document.toLowerCase().includes(searchLower) ||
+      (user.email && user.email.toLowerCase().includes(searchLower));
+
+    // Filtro por estado
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && user.active) ||
+      (statusFilter === "inactive" && !user.active);
+
+    return matchesSearch && matchesStatus;
+  });
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center">
@@ -421,15 +443,84 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* Search and Filters */}
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Search Bar */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre, cédula o email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-lg bg-zinc-900 border border-zinc-800 pl-10 pr-4 py-2.5 text-white placeholder-white/40 focus:border-orange-500 focus:outline-none transition"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-2 rounded-lg bg-zinc-900 border border-zinc-800 p-1">
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                statusFilter === "all"
+                  ? "bg-orange-500 text-white"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setStatusFilter("active")}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                statusFilter === "active"
+                  ? "bg-green-500 text-white"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              Activos
+            </button>
+            <button
+              onClick={() => setStatusFilter("inactive")}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                statusFilter === "inactive"
+                  ? "bg-red-500 text-white"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              Inactivos
+            </button>
+          </div>
+        </div>
+
+        {/* Results Counter */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-white/60">
+            Mostrando {filteredUsers.length} de {users.length} usuarios
+          </span>
+          {(searchTerm || statusFilter !== "all") && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("all");
+              }}
+              className="text-orange-400 hover:text-orange-300 transition"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Users List - Responsive */}
       {/* Mobile View - Cards */}
       <div className="block lg:hidden space-y-4">
-        {users.length === 0 ? (
+        {filteredUsers.length === 0 ? (
           <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-12 text-center text-white/40">
-            No hay usuarios registrados
+            {users.length === 0 ? "No hay usuarios registrados" : "No se encontraron usuarios con los filtros aplicados"}
           </div>
         ) : (
-          users.map((user) => (
+          filteredUsers.map((user) => (
             <div
               key={user.id}
               className={`rounded-lg border border-zinc-800 bg-zinc-900 p-4 space-y-3 ${
@@ -546,14 +637,14 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-white/40">
-                    No hay usuarios registrados
+                    {users.length === 0 ? "No hay usuarios registrados" : "No se encontraron usuarios con los filtros aplicados"}
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                filteredUsers.map((user) => (
                   <tr
                     key={user.id}
                     className={`border-b border-zinc-800 transition hover:bg-zinc-800/50 ${
