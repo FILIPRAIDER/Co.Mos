@@ -152,10 +152,10 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="mb-8 text-center">
           <Image
-            src="/logo.png"
-            alt="Logo"
-            width={120}
-            height={120}
+            src="/Logo.svg"
+            alt="co.mos"
+            width={80}
+            height={80}
             className="mx-auto mb-4"
           />
           <h1 className="text-3xl font-bold text-white">

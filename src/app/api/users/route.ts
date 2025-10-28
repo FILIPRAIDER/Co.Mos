@@ -43,6 +43,7 @@ export async function GET() {
         email: true,
         document: true,
         role: true,
+        active: true,
         createdAt: true,
       },
       orderBy: {
