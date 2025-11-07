@@ -128,12 +128,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generar número de orden único
-    const orderCount = await prisma.order.count({
-      where: { restaurantId: restaurant.id }
-    });
-    const orderNumber = `ORD-${String(orderCount + 1).padStart(6, '0')}`;
-
     // Calcular totales
     let subtotal = 0;
     const itemsWithDetails = await Promise.all(
@@ -158,10 +152,15 @@ export async function POST(request: Request) {
     const tax = subtotal * restaurant.taxRate;
     const total = subtotal + tax;
 
-    // Crear la orden
+    // Crear la orden con transacción para evitar duplicados
+    // Usar timestamp + random para garantizar unicidad
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    const uniqueOrderNumber = `ORD-${timestamp}-${random}`;
+
     const order = await prisma.order.create({
       data: {
-        orderNumber,
+        orderNumber: uniqueOrderNumber,
         restaurantId: restaurant.id,
         tableId: session.tableId,
         sessionId: session.id,

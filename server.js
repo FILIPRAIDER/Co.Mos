@@ -45,6 +45,13 @@ app.prepare().then(() => {
     connectionCount++;
     console.log(`🔌 Cliente conectado (ID: ${socket.id}) - Total: ${connectionCount}`);
 
+    // Heartbeat - responder a pings
+    socket.on('ping', (callback) => {
+      if (typeof callback === 'function') {
+        callback();
+      }
+    });
+
     // Unirse a canales específicos
     socket.on('join:cocina', () => {
       socket.join('cocina');
