@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Search, Plus, Minus, ShoppingCart, Package, Table2 } from "lucide-react";
 import Image from "next/image";
 import { useAlert } from "@/hooks/useAlert";
+import { useOfflineMode } from "@/hooks/useOfflineMode";
 
 type Category = {
   id: string;
@@ -39,8 +40,9 @@ type Table = {
 
 function OrdersContent() {
   const searchParams = useSearchParams();
-  const mesaParam = searchParams.get("mesa");
+  const mesaParam = searchParams.get("mesa"); // Viene como número: "1", "2", etc.
   const { success, error, AlertComponent } = useAlert();
+  const { isOnline, createOfflineOrder, cacheData, getCachedData } = useOfflineMode();
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -50,40 +52,83 @@ function OrdersContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<"mesa" | "llevar">("mesa");
-  const [selectedTable, setSelectedTable] = useState<string | null>(mesaParam);
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
+  // Efecto para pre-seleccionar mesa cuando viene del dashboard
   useEffect(() => {
-    if (mesaParam) {
+    if (mesaParam && tables.length > 0) {
       setOrderType("mesa");
-      setSelectedTable(mesaParam);
+      
+      // Buscar la mesa por su número (mesaParam es string "1", "2", etc.)
+      const tableNumber = parseInt(mesaParam, 10);
+      const foundTable = tables.find(t => t.number === tableNumber);
+      
+      if (foundTable) {
+        setSelectedTable(foundTable.id);
+        console.log(`✅ Mesa #${tableNumber} pre-seleccionada (ID: ${foundTable.id})`);
+      } else {
+        console.warn(`⚠️ No se encontró mesa con número ${tableNumber}`);
+      }
     }
-  }, [mesaParam]);
+  }, [mesaParam, tables]);
 
+  // Cargar datos (online o desde cache)
   useEffect(() => {
     async function fetchData() {
       try {
-        const [categoriesRes, productsRes, tablesRes] = await Promise.all([
-          fetch('/api/categories'),
-          fetch('/api/products'),
-          fetch('/api/tables'),
-        ]);
+        if (isOnline) {
+          // Online: Fetch desde API
+          const [categoriesRes, productsRes, tablesRes] = await Promise.all([
+            fetch('/api/categories'),
+            fetch('/api/products'),
+            fetch('/api/tables'),
+          ]);
+          
+          const categoriesData = await categoriesRes.json();
+          const productsData = await productsRes.json();
+          const tablesData = await tablesRes.json();
+          
+          setCategories(categoriesData);
+          setProducts(productsData);
+          setTables(tablesData);
+
+          // Cachear datos para modo offline
+          await cacheData({
+            categories: categoriesData,
+            products: productsData,
+            tables: tablesData,
+          });
+        } else {
+          // Offline: Cargar desde cache
+          const cached = await getCachedData();
+          setCategories(cached.categories);
+          setProducts(cached.products);
+          setTables(cached.tables);
+          
+          if (cached.products.length === 0) {
+            error('No hay datos cacheados. Conecta a internet para cargar el menú.');
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
         
-        const categoriesData = await categoriesRes.json();
-        const productsData = await productsRes.json();
-        const tablesData = await tablesRes.json();
-        
-        setCategories(categoriesData);
-        setProducts(productsData);
-        setTables(tablesData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+        // Si falla online, intentar cargar desde cache
+        if (isOnline) {
+          const cached = await getCachedData();
+          if (cached.products.length > 0) {
+            setCategories(cached.categories);
+            setProducts(cached.products);
+            setTables(cached.tables);
+            error('Error al cargar datos. Mostrando versión cacheada.');
+          }
+        }
       } finally {
         setLoading(false);
       }
     }
     
     fetchData();
-  }, []);
+  }, [isOnline]);
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
@@ -142,44 +187,109 @@ function OrdersContent() {
     console.log('🛒 Enviando orden:', { 
       orderType, 
       selectedTable, 
-      cartItems: cart.length 
+      cartItems: cart.length,
+      isOnline 
     });
     
     try {
       const orderData = {
-        type: orderType === 'mesa' ? 'COMER_AQUI' : 'PARA_LLEVAR',
+        type: (orderType === 'mesa' ? 'COMER_AQUI' : 'PARA_LLEVAR') as 'COMER_AQUI' | 'PARA_LLEVAR',
         tableId: orderType === 'mesa' ? selectedTable : null,
         items: cart.map(item => ({
           productId: item.product.id,
+          productName: item.product.name,
           quantity: item.quantity,
           price: item.product.price,
-          notes: item.notes || null,
+          notes: item.notes || undefined,
         })),
+        total: subtotal + iva,
       };
       
-      console.log('📤 Datos de orden:', orderData);
+      // Si no hay conexión, guardar offline
+      if (!isOnline) {
+        await createOfflineOrder(orderData);
+        setCart([]);
+        success('Pedido guardado. Se enviará cuando haya conexión.');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500);
+        return;
+      }
+      
+      console.log('📤 Datos de orden (online):', orderData);
       
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify({
+          type: orderData.type,
+          tableId: orderData.tableId,
+          items: orderData.items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            notes: item.notes || null,
+          })),
+        }),
       });
       
       if (response.ok) {
         const data = await response.json();
         setCart([]);
         success(`Orden ${data.order.orderNumber} enviada exitosamente`);
-        // Redirigir a dashboard después de 1 segundo
         setTimeout(() => {
           window.location.href = '/dashboard';
         }, 1000);
       } else {
         const errorData = await response.json();
-        error(errorData.error || 'Error al crear la orden');
+        
+        // Si falla, ofrecer guardar offline
+        const shouldSaveOffline = confirm(
+          'Error al enviar la orden. ¿Guardar para enviar después?'
+        );
+        
+        if (shouldSaveOffline) {
+          await createOfflineOrder(orderData);
+          setCart([]);
+          success('Pedido guardado. Se enviará cuando haya conexión.');
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        } else {
+          error(errorData.error || 'Error al crear la orden');
+        }
       }
     } catch (err) {
       console.error('Error:', err);
-      error('Error al enviar la orden');
+      
+      // Ofrecer guardar offline en caso de error
+      const shouldSaveOffline = confirm(
+        'Error de conexión. ¿Guardar el pedido para enviar después?'
+      );
+      
+      if (shouldSaveOffline) {
+        const orderData = {
+          type: (orderType === 'mesa' ? 'COMER_AQUI' : 'PARA_LLEVAR') as 'COMER_AQUI' | 'PARA_LLEVAR',
+          tableId: orderType === 'mesa' ? selectedTable : null,
+          items: cart.map(item => ({
+            productId: item.product.id,
+            productName: item.product.name,
+            quantity: item.quantity,
+            price: item.product.price,
+            notes: item.notes,
+          })),
+          total: subtotal + iva,
+        };
+        
+        await createOfflineOrder(orderData);
+        setCart([]);
+        success('Pedido guardado. Se enviará cuando haya conexión.');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500);
+      } else {
+        error('Error al enviar la orden');
+      }
     }
   };
 

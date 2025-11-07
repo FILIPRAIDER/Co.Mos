@@ -3,6 +3,7 @@
 import { SessionProvider } from "next-auth/react";
 import { NotificationProvider } from "@/hooks/useNotification";
 import { ErrorBoundary, LogViewer } from "@/components/ErrorBoundary";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +11,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <SessionProvider>
         <NotificationProvider>
           {children}
+          <OfflineIndicator />
           <LogViewer />
         </NotificationProvider>
       </SessionProvider>
