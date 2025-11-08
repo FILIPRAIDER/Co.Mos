@@ -305,7 +305,7 @@ export default function CocinaPage() {
             <p className="text-sm text-white/60">No hay órdenes para preparar</p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3">
           {filteredOrders.map((order) => {
             const timeElapsed = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 1000 / 60);
             const isUrgent = timeElapsed > 10;
@@ -313,7 +313,7 @@ export default function CocinaPage() {
             return (
               <div
                 key={order.id}
-                className={`rounded-lg border p-5 transition-all ${
+                className={`rounded-lg border p-3 sm:p-4 transition-all ${
                   order.status === "PENDIENTE"
                     ? isUrgent 
                       ? "bg-zinc-900 border-red-500 animate-pulse" 
@@ -321,13 +321,13 @@ export default function CocinaPage() {
                     : "bg-zinc-900 border-orange-500"
                 }`}
               >
-                {/* Order Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl font-bold tracking-tight">{order.orderNumber}</span>
+                {/* Order Header - Mobile Optimized */}
+                <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-xl sm:text-2xl font-bold tracking-tight truncate">{order.orderNumber}</span>
                       <span
-                        className={`rounded-lg px-3 py-1 text-xs font-bold uppercase tracking-wide ${
+                        className={`shrink-0 rounded-lg px-2 sm:px-3 py-1 text-xs font-bold uppercase tracking-wide ${
                           order.status === "PENDIENTE"
                             ? isUrgent
                               ? "bg-red-500 text-white"
@@ -335,27 +335,27 @@ export default function CocinaPage() {
                             : "bg-orange-500 text-white"
                         }`}
                       >
-                        {order.status === "PENDIENTE" ? "⏱️ Pendiente" : "👨‍🍳 Preparando"}
+                        {order.status === "PENDIENTE" ? "⏱️ Pend." : "👨‍🍳 Prep."}
                       </span>
                       {isUrgent && order.status === "PENDIENTE" && (
-                        <span className="rounded-lg bg-red-600 px-2 py-1 text-xs font-bold text-white animate-pulse">
+                        <span className="shrink-0 rounded-lg bg-red-600 px-2 py-1 text-xs font-bold text-white animate-pulse">
                           ⚠️ URGENTE
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-gray-400">
-                      <div className="flex items-center gap-1.5 rounded-lg bg-zinc-800 border border-zinc-700 px-2 py-1">
-                        <span className="text-lg">🪑</span>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 flex-wrap">
+                      <div className="flex items-center gap-1 rounded-lg bg-zinc-800 border border-zinc-700 px-2 py-1">
+                        <span className="text-base">🪑</span>
                         <span className="font-semibold">Mesa {order.table.number}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-base">👤</span>
-                        <span>{order.customerName || "Cliente"}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm">👤</span>
+                        <span className="truncate max-w-[100px]">{order.customerName || "Cliente"}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-1.5 mb-1">
+                  <div className="text-left sm:text-right shrink-0">
+                    <div className="inline-block rounded-lg bg-zinc-800 border border-zinc-700 px-2 sm:px-3 py-1 sm:py-1.5 mb-1">
                       <p className="text-xs text-gray-400">Recibido</p>
                       <p className="text-sm font-bold">
                         {new Date(order.createdAt).toLocaleTimeString("es-CO", {

@@ -68,49 +68,38 @@ export default function DashboardPage() {
 			transports: ['websocket', 'polling'],
 		});
 
+		const handleUpdate = () => {
+			console.log('🔄 Dashboard: Actualizando datos en tiempo real...');
+			fetchData();
+		};
+
 		socketInstance.on('connect', () => {
-			console.log('🔌 Conectado a Socket.IO');
+			console.log('🔌 Dashboard conectado a Socket.IO');
 			socketInstance.emit('join:admin');
-		});
-
-		socketInstance.on('order:update', () => {
+			// Cargar datos iniciales
 			fetchData();
 		});
 
-		socketInstance.on('order:statusChange', () => {
-			fetchData();
-		});
-
-		socketInstance.on('table:update', () => {
-			fetchData();
-		});
-
-		socketInstance.on('session:close', () => {
-			fetchData();
-		});
+		// Escuchar TODOS los eventos de actualización
+		socketInstance.on('order:update', handleUpdate);
+		socketInstance.on('order:statusChange', handleUpdate);
+		socketInstance.on('order:statusChanged', handleUpdate);
+		socketInstance.on('order:new', handleUpdate);
+		socketInstance.on('table:update', handleUpdate);
+		socketInstance.on('table:updated', handleUpdate);
+		socketInstance.on('session:close', handleUpdate);
 
 		setSocket(socketInstance);
 
-		// Socket listeners
-		if (socketInstance) {
-			// Actualizar cuando cambien estados de órdenes
-			socketInstance.on('order:statusChanged', () => {
-				console.log('🔄 Estado de orden cambió, actualizando...');
-				fetchData();
-			});
-
-			socketInstance.on('order:new', () => {
-				console.log('🆕 Nueva orden, actualizando...');
-				fetchData();
-			});
-		}
-
 		return () => {
-			if (socketInstance) {
-				socketInstance.off('order:statusChanged');
-				socketInstance.off('order:new');
-			}
-			socketInstance?.disconnect();
+			socketInstance.off('order:update', handleUpdate);
+			socketInstance.off('order:statusChange', handleUpdate);
+			socketInstance.off('order:statusChanged', handleUpdate);
+			socketInstance.off('order:new', handleUpdate);
+			socketInstance.off('table:update', handleUpdate);
+			socketInstance.off('table:updated', handleUpdate);
+			socketInstance.off('session:close', handleUpdate);
+			socketInstance.disconnect();
 		};
 	}, []);
 
@@ -339,6 +328,18 @@ export default function DashboardPage() {
 
 					if (response.ok) {
 						success(`Orden ${order.orderNumber} cancelada exitosamente`);
+						
+						// Emitir eventos Socket.IO para actualizar todas las vistas
+						if (socket) {
+							socket.emit('order:statusChanged', { 
+								orderId: order.id, 
+								status: 'CANCELADA',
+								tableId: order.tableId 
+							});
+							socket.emit('table:updated', { tableNumber: table.number });
+						}
+						
+						// Forzar actualización inmediata
 						await fetchData();
 					} else {
 						error('Error al cancelar la orden');
@@ -409,7 +410,7 @@ export default function DashboardPage() {
 						</Link>
 					</div>
 				) : (
-					<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+					<div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
 					{tables.map((table) => {
 						const status = getTableStatus(table);
 						const styles = statusStyles[status];
@@ -419,7 +420,7 @@ export default function DashboardPage() {
 						return (
 							<article
 								key={`mesa-${table.number}`}
-								className="relative flex h-[320px] flex-col rounded-lg border border-white/10 bg-[#1a1a1f] p-4"
+								className="relative flex min-h-[280px] max-h-[320px] flex-col rounded-lg border border-white/10 bg-[#1a1a1f] p-3 sm:p-4"
 							>
 								<header className="flex items-start justify-between">
 									<div>

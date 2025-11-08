@@ -25,11 +25,18 @@ export default function CarritoPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState("");
+  const [generalNotes, setGeneralNotes] = useState("");
+  const [showGeneralNotesModal, setShowGeneralNotesModal] = useState(false);
 
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
       setCart(JSON.parse(savedCart));
+    }
+    
+    const savedGeneralNotes = localStorage.getItem('orderGeneralNotes');
+    if (savedGeneralNotes) {
+      setGeneralNotes(savedGeneralNotes);
     }
   }, []);
 
@@ -169,12 +176,21 @@ export default function CarritoPage() {
           </div>
         ))}
 
-        {/* Add Observations Section */}
-        <div className="rounded-2xl bg-[#1a1a1f]/30 p-4 border border-dashed border-white/10">
-          <p className="text-sm text-white/60 text-center italic">
-            Añadir Observaciones
-          </p>
-        </div>
+        {/* Add General Observations Button */}
+        <button
+          onClick={() => setShowGeneralNotesModal(true)}
+          className="rounded-2xl bg-[#1a1a1f]/50 border border-dashed border-orange-500/30 p-4 w-full transition hover:bg-[#1a1a1f]/70 hover:border-orange-500/50"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-lg">📝</span>
+            <p className="text-sm text-orange-400 font-medium">
+              {generalNotes ? "Editar Observaciones Generales" : "Añadir Observaciones Generales"}
+            </p>
+          </div>
+          {generalNotes && (
+            <p className="text-xs text-white/60 mt-2 text-center line-clamp-2">{generalNotes}</p>
+          )}
+        </button>
       </div>
 
       {/* Bottom Summary */}
@@ -241,6 +257,65 @@ export default function CarritoPage() {
               </button>
               <button
                 onClick={saveNotes}
+                className="flex-1 rounded-2xl bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* General Notes Modal */}
+      {showGeneralNotesModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowGeneralNotesModal(false)}
+          />
+          <div className="relative z-10 w-full max-w-lg bg-[#1a1a1f] rounded-t-3xl sm:rounded-3xl p-6 animate-slideUp">
+            <button
+              onClick={() => setShowGeneralNotesModal(false)}
+              className="absolute right-4 top-4 rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="mb-4 text-xl font-semibold">Observaciones del Pedido</h3>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm text-white/70">
+                Instrucciones generales para el restaurante
+              </label>
+              <textarea
+                value={generalNotes}
+                onChange={(e) => setGeneralNotes(e.target.value)}
+                placeholder="Ej: Sin picante, bebidas sin hielo, servilletas extras..."
+                rows={4}
+                autoFocus
+                maxLength={300}
+                className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-white placeholder-white/40 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <p className="mt-2 text-xs text-white/50">
+                {generalNotes.length}/300 caracteres
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowGeneralNotesModal(false);
+                }}
+                className="flex-1 rounded-2xl border border-white/10 py-3 font-semibold text-white transition hover:bg-white/5"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem('orderGeneralNotes', generalNotes);
+                  setShowGeneralNotesModal(false);
+                }}
                 className="flex-1 rounded-2xl bg-orange-500 py-3 font-semibold text-white transition hover:bg-orange-600"
               >
                 Guardar
