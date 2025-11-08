@@ -174,6 +174,8 @@ model Order {
   @@index([userId])
   @@index([status])
   @@index([orderNumber])
+  @@index([restaurantId, status, createdAt])
+  @@index([sessionId, status])
 }
 
 model OrderItem {
@@ -189,6 +191,7 @@ model OrderItem {
   updatedAt     DateTime @updatedAt
   @@index([orderId])
   @@index([productId])
+  @@index([orderId, productId])
 }
 
 model Review {

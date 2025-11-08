@@ -15,6 +15,8 @@
     "@prisma/client": "^6.16.3",
     "@react-email/components": "^0.5.7",
     "@react-email/render": "^1.4.0",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.6",
     "@zxing/library": "^0.21.3",
     "bcrypt": "^6.0.0",
     "chart.js": "^4.5.1",
@@ -33,7 +35,9 @@
     "react-dom": "19.1.0",
     "resend": "^6.3.0",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "winston": "^3.18.3",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

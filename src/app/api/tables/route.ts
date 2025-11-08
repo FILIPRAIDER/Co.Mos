@@ -1,6 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentRestaurant } from '@/lib/auth-helpers';
+import { CreateTableSchema, UpdateTableSchema } from '@/lib/validations/table.schema';
+import { logger } from '@/lib/logger';
+import { withRateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
   try {
@@ -39,26 +42,30 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
-  try {
-    const restaurant = await getCurrentRestaurant();
-    const body = await request.json();
-    const { number, capacity } = body;
+export async function POST(request: NextRequest) {
+  return withRateLimit(request, 'tables:create', async () => {
+    try {
+      const restaurant = await getCurrentRestaurant();
+      const body = await request.json();
+      
+      // Validación con Zod
+      const validation = CreateTableSchema.safeParse(body);
+      if (!validation.success) {
+        return NextResponse.json(
+          { error: 'Datos inválidos', details: validation.error.issues },
+          { status: 400 }
+        );
+      }
+      
+      const { number, capacity } = validation.data;
 
-    if (!number) {
-      return NextResponse.json(
-        { error: 'El número de mesa es requerido' },
-        { status: 400 }
-      );
-    }
-
-    // Verificar que no exista una mesa con ese número en el restaurante
-    const existingTable = await prisma.table.findFirst({
-      where: {
-        restaurantId: restaurant.id,
-        number: parseInt(number),
-      },
-    });
+      // Verificar que no exista una mesa con ese número en el restaurante
+      const existingTable = await prisma.table.findFirst({
+        where: {
+          restaurantId: restaurant.id,
+          number: number,
+        },
+      });
 
     if (existingTable) {
       return NextResponse.json(
@@ -89,50 +96,58 @@ export async function POST(request: Request) {
       { width: 512, margin: 2 }
     );
 
-    const table = await prisma.table.create({
-      data: {
-        number: parseInt(number),
-        capacity: capacity || 4,
-        available: true,
-        qrCode,
-        qrImageUrl: qrDataUrl,
+      const table = await prisma.table.create({
+        data: {
+          number: number,
+          capacity: capacity || 4,
+          available: true,
+          qrCode,
+          qrImageUrl: qrDataUrl,
         restaurantId: restaurant.id,
       },
     });
 
-    return NextResponse.json({ success: true, table });
-  } catch (error) {
-    console.error('Error creating table:', error);
-    return NextResponse.json(
-      { error: 'Error al crear la mesa' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PATCH(request: Request) {
-  try {
-    const body = await request.json();
-    const { id, available } = body;
-
-    if (!id) {
+      logger.info('Mesa creada', { tableId: table.id, number: table.number });
+      return NextResponse.json({ success: true, table });
+    } catch (error) {
+      logger.error('Error creating table', { error: error instanceof Error ? error.message : 'Unknown' });
       return NextResponse.json(
-        { error: 'El ID de la mesa es requerido' },
-        { status: 400 }
+        { error: 'Error al crear la mesa' },
+        { status: 500 }
       );
     }
+  });
+}
+
+export async function PATCH(request: NextRequest) {
+  return withRateLimit(request, 'general', async () => {
+    try {
+      const body = await request.json();
+      
+      // Validación con Zod
+      const validation = UpdateTableSchema.safeParse(body);
+      if (!validation.success) {
+        return NextResponse.json(
+          { error: 'Datos inválidos', details: validation.error.issues },
+          { status: 400 }
+        );
+      }
+      
+      const { id, available } = validation.data;
 
     const table = await prisma.table.update({
       where: { id },
       data: { available },
     });
 
-    return NextResponse.json({ success: true, table });
-  } catch (error) {
-    console.error('Error updating table:', error);
-    return NextResponse.json(
-      { error: 'Error al actualizar la mesa' },
-      { status: 500 }
-    );
-  }
+      logger.info('Mesa actualizada', { tableId: id, available });
+      return NextResponse.json({ success: true, table });
+    } catch (error) {
+      logger.error('Error updating table', { error: error instanceof Error ? error.message : 'Unknown' });
+      return NextResponse.json(
+        { error: 'Error al actualizar la mesa' },
+        { status: 500 }
+      );
+    }
+  });
 }

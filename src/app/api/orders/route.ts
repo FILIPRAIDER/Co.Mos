@@ -1,12 +1,31 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentRestaurant } from '@/lib/auth-helpers';
+import { CreateOrderSchema } from '@/lib/validations/order.schema';
+import { logger, sanitizeLogData } from '@/lib/logger';
+import { withRateLimit } from '@/lib/rate-limit';
+import { cacheGet, cacheSet, cacheDelete } from '@/lib/redis';
+import { Prisma } from '@prisma/client';
 
-export async function POST(request: Request) {
-  try {
-    // Leer el body solo una vez
-    const body = await request.json();
-    const { sessionCode, tableId, items, customerName, type, notes } = body;
+export async function POST(request: NextRequest) {
+  return withRateLimit(request, 'orders:create', async () => {
+    const startTime = performance.now();
+    
+    try {
+      // Leer el body solo una vez
+      const body = await request.json();
+      
+      // Validación con Zod
+      const validation = CreateOrderSchema.safeParse(body);
+      if (!validation.success) {
+        logger.warn('Validación fallida', { errors: validation.error.issues });
+        return NextResponse.json(
+          { error: 'Datos inválidos', details: validation.error.issues },
+          { status: 400 }
+        );
+      }
+      
+      const { sessionCode, tableId, items, customerName, type, notes } = body;
 
     // Intentar obtener restaurante desde sesión o desde body
     let restaurantId: string | null = null;
@@ -186,20 +205,27 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ 
-      success: true,
-      order 
-    });
-  } catch (error) {
-    console.error('Error creating order:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al crear la orden' },
-      { status: 500 }
-    );
-  }
+      const duration = performance.now() - startTime;
+      logger.info('Orden creada', { orderId: order.id, duration: `${duration.toFixed(2)}ms` });
+      
+      await cacheDelete(`orders:${restaurant.id}`);
+      
+      return NextResponse.json({ 
+        success: true,
+        order 
+      });
+    } catch (error) {
+      logger.error('Error creando orden', { error: error instanceof Error ? error.message : 'Unknown' });
+      return NextResponse.json(
+        { error: 'Error al procesar la orden' },
+        { status: 500 }
+      );
+    }
+  });
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  return withRateLimit(request, 'orders:read', async () => {
   try {
     const { searchParams } = new URL(request.url);
     const sessionCode = searchParams.get('sessionCode');
@@ -285,9 +311,10 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json(orders);
-  } catch (error) {
-    console.error('❌ Error fetching orders:', error);
-    return NextResponse.json([]);
-  }
+      return NextResponse.json(orders);
+    } catch (error) {
+      logger.error('Error fetching orders', { error: error instanceof Error ? error.message : 'Unknown' });
+      return NextResponse.json([]);
+    }
+  });
 }
