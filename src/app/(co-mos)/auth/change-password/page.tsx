@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Lock, ArrowLeft, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import Modal from "@/components/Modal";
@@ -88,25 +88,19 @@ export default function ChangePasswordPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Actualizar sesión
-        await update({
-          ...session,
-          user: {
-            ...session?.user,
-            mustChangePassword: false,
-          },
-        });
-
         setModalConfig({
           type: "success",
           title: "¡Contraseña actualizada!",
-          message: "Tu contraseña se ha cambiado exitosamente",
+          message: "Tu contraseña se ha cambiado exitosamente. Serás redirigido al inicio de sesión.",
         });
         setShowModal(true);
         
-        // Redirigir después de 2 segundos
-        setTimeout(() => {
-          router.push("/dashboard");
+        // Cerrar sesión y redirigir al login después de 2 segundos
+        setTimeout(async () => {
+          await signOut({ 
+            redirect: true,
+            callbackUrl: "/auth/login?message=password-changed" 
+          });
         }, 2000);
       } else {
         setModalConfig({

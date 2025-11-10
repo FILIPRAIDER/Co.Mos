@@ -144,6 +144,8 @@ export default function CocinaPage() {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    console.log('🔄 Intentando actualizar orden:', { orderId, newStatus });
+    
     try {
       const response = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
@@ -151,21 +153,39 @@ export default function CocinaPage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
+      console.log('📡 Respuesta del servidor:', response.status, response.statusText);
+
       if (response.ok) {
-        const updatedOrder = await response.json();
+        const result = await response.json();
+        console.log('✅ Orden actualizada exitosamente:', result);
         
-        // Emitir evento de Socket.io
-        emitEvent('order:statusChanged', {
-          orderId: updatedOrder.id,
-          orderNumber: updatedOrder.orderNumber,
-          status: newStatus,
-          timestamp: new Date().toISOString(),
-        });
+        // Emitir evento de Socket.io para notificar a otros clientes
+        if (socket && isConnected) {
+          const eventData = {
+            orderId: result.order.id,
+            orderNumber: result.order.orderNumber,
+            status: newStatus,
+            previousStatus: result.order.status,
+            timestamp: new Date().toISOString(),
+            tableNumber: result.order.table?.number,
+          };
+          
+          console.log('📤 Emitiendo evento socket:', eventData);
+          emitEvent('order:statusChanged', eventData);
+        } else {
+          console.warn('⚠️ Socket no conectado, no se emitió evento');
+        }
         
+        // Refrescar lista de órdenes
         await fetchOrders();
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error en respuesta:', errorData);
+        alert(`Error: ${errorData.error || 'No se pudo actualizar la orden'}`);
       }
     } catch (error) {
-      console.error("Error updating order:", error);
+      console.error("❌ Error updating order:", error);
+      alert('Error de conexión al actualizar la orden');
     }
   };
 

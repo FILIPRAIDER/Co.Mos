@@ -13,7 +13,8 @@ export const OrderItemSchema = z.object({
   notes: z.string()
     .max(500, 'Las notas no pueden exceder 500 caracteres')
     .optional()
-    .transform(val => val?.trim())
+    .nullable()
+    .transform(val => val ? val.trim() : null)
 });
 
 // Schema para crear una orden
@@ -34,16 +35,19 @@ export const CreateOrderSchema = z.object({
     .min(2, 'Nombre muy corto')
     .max(100, 'Nombre muy largo')
     .optional()
-    .transform(val => val?.trim()),
+    .nullable()
+    .transform(val => val ? val.trim() : null),
   customerEmail: z.string()
     .email('Email inválido')
     .max(255, 'Email muy largo')
     .optional()
-    .transform(val => val?.trim().toLowerCase()),
+    .nullable()
+    .transform(val => val ? val.trim().toLowerCase() : null),
   notes: z.string()
     .max(1000, 'Las notas no pueden exceder 1000 caracteres')
     .optional()
-    .transform(val => val?.trim()),
+    .nullable()
+    .transform(val => val ? val.trim() : null),
   tip: z.number()
     .min(0, 'La propina no puede ser negativa')
     .max(1000000, 'Propina inválida')

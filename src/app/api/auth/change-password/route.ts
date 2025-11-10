@@ -84,11 +84,14 @@ export async function POST(request: Request) {
       data: {
         passwordHash: newPasswordHash,
         mustChangePassword: false,
+        updatedAt: new Date(), // Actualizar timestamp para invalidar sesiones anteriores
       },
     });
 
+    // Retornar success con flag para que el cliente cierre la sesión
     return NextResponse.json({
       message: "Contraseña actualizada exitosamente",
+      requiresReauth: true,
     });
   } catch (error) {
     console.error("Error changing password:", error);

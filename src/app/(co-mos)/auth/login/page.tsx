@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Modal from "@/components/Modal";
 
 export default function LoginPage() {
@@ -17,6 +17,20 @@ export default function LoginPage() {
     message: string;
   }>({ type: "success", title: "", message: "" });
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Mostrar mensaje si viene desde cambio de contraseña
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message === "password-changed") {
+      setModalConfig({
+        type: "success",
+        title: "Contraseña actualizada",
+        message: "Tu contraseña ha sido cambiada exitosamente. Por favor inicia sesión con tu nueva contraseña.",
+      });
+      setShowModal(true);
+    }
+  }, [searchParams]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

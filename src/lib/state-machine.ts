@@ -13,7 +13,7 @@ export type OrderStatus =
 
 // Definir transiciones válidas
 const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PENDIENTE: ['ACEPTADA', 'CANCELADA'],
+  PENDIENTE: ['ACEPTADA', 'PREPARANDO', 'CANCELADA'], // Permitir ir directo a PREPARANDO
   ACEPTADA: ['PREPARANDO', 'CANCELADA'],
   PREPARANDO: ['LISTA', 'CANCELADA'],
   LISTA: ['ENTREGADA', 'CANCELADA'],
