@@ -76,17 +76,19 @@ export default function ConfirmarPage() {
   const handleConfirmOrder = async () => {
     setIsSubmitting(true);
     
+    const orderData = {
+      sessionCode: sessionCode!,
+      customerName: customerName.trim() || undefined,
+      type: 'COMER_AQUI',
+      items: cart.map(item => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+        notes: item.notes,
+      })),
+    };
+
     try {
-      const orderData = {
-        sessionCode: sessionCode!,
-        customerName: customerName.trim() || undefined,
-        type: 'COMER_AQUI',
-        items: cart.map(item => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          notes: item.notes,
-        })),
-      };
+      console.log('📤 Enviando orden:', orderData);
 
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -98,6 +100,17 @@ export default function ConfirmarPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Error del servidor:', errorData);
+        
+        // Mostrar detalles específicos si hay errores de validación
+        if (errorData.details && Array.isArray(errorData.details)) {
+          console.error('📋 Detalles de validación:', errorData.details);
+          const errorMessages = errorData.details.map((d: any) => 
+            `${d.path?.join('.') || 'Campo'}: ${d.message}`
+          ).join('\n');
+          throw new Error(`Errores de validación:\n${errorMessages}`);
+        }
+        
         throw new Error(errorData.error || 'Error al crear la orden');
       }
 
@@ -114,6 +127,7 @@ export default function ConfirmarPage() {
       }, 1000);
     } catch (error) {
       console.error('❌ Error al crear orden:', error);
+      console.error('📦 Datos enviados:', orderData);
       showError(error instanceof Error ? error.message : 'Hubo un error al enviar tu pedido. Por favor intenta de nuevo.');
       setIsSubmitting(false);
       setShowConfirmModal(false);
