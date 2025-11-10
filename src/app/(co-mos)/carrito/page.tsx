@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { X } from "lucide-react";
 
 type Product = {
@@ -130,8 +131,19 @@ export default function CarritoPage() {
           >
             <div className="flex items-center gap-4 mb-3">
               {/* Product Image */}
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20">
-                <span className="text-4xl">🍔</span>
+              <div className="relative h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 overflow-hidden">
+                {item.product.imageUrl ? (
+                  <Image 
+                    src={item.product.imageUrl} 
+                    alt={item.product.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="text-4xl">🍽️</span>
+                  </div>
+                )}
               </div>
 
               {/* Product Info */}

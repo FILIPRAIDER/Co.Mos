@@ -25,6 +25,8 @@ export const CreateOrderSchema = z.object({
   sessionId: z.string()
     .cuid('ID de sesión inválido')
     .optional(),
+  sessionCode: z.string()
+    .optional(), // Código de sesión para buscar la sesión activa
   type: z.enum(['COMER_AQUI', 'PARA_LLEVAR'], {
     message: 'Tipo de orden inválido'
   }),
