@@ -9,7 +9,8 @@ export const OrderItemSchema = z.object({
     .max(50, 'La cantidad máxima es 50 por producto'),
   price: z.number()
     .positive('El precio debe ser positivo')
-    .max(10000000, 'Precio inválido'),
+    .max(10000000, 'Precio inválido')
+    .optional(), // Opcional porque el backend lo obtiene de la BD
   notes: z.string()
     .max(500, 'Las notas no pueden exceder 500 caracteres')
     .optional()
