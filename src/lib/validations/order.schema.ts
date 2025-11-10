@@ -58,9 +58,9 @@ export const CreateOrderSchema = z.object({
     .optional()
     .default(0)
 }).refine(
-  data => data.tableId || data.type === 'PARA_LLEVAR',
+  data => data.tableId || data.sessionCode || data.sessionId || data.type === 'PARA_LLEVAR',
   {
-    message: 'Para órdenes de COMER_AQUI se requiere tableId',
+    message: 'Para órdenes de COMER_AQUI se requiere tableId, sessionCode o sessionId',
     path: ['tableId']
   }
 );
