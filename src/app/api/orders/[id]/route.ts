@@ -79,6 +79,30 @@ export async function PATCH(
       // Invalidar cache
       await cacheDelete(`orders:${currentOrder.restaurantId}`);
 
+      // Emitir eventos Socket.IO para actualizaciones en tiempo real
+      if (global.io) {
+        console.log('📤 Emitiendo eventos de actualización para:', order.orderNumber, '→', status);
+        
+        // Emitir actualización completa
+        global.io.to('cocina').emit('order:update', order);
+        global.io.to('servicio').emit('order:update', order);
+        global.io.to('admin').emit('order:update', order);
+        
+        // Emitir cambio de estado específico
+        const statusChangeData = {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: status,
+          previousStatus: currentOrder.status,
+          tableNumber: order.table?.number,
+          timestamp: new Date().toISOString(),
+        };
+        
+        global.io.to('cocina').emit('order:statusChange', statusChangeData);
+        global.io.to('servicio').emit('order:statusChange', statusChangeData);
+        global.io.to('admin').emit('order:statusChange', statusChangeData);
+      }
+
       return NextResponse.json({ success: true, order });
     } catch (error) {
       logger.error('Error actualizando orden', {

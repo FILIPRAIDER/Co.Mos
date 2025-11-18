@@ -61,6 +61,14 @@ export default function DashboardPage() {
 	const { confirm, success, error, AlertComponent } = useAlert();
 	const [socket, setSocket] = useState<Socket | null>(null);
 
+	// Iniciar job de limpieza de sesiones (solo una vez)
+	useEffect(() => {
+		fetch('/api/sessions/init-cleanup')
+			.then(res => res.json())
+			.then(data => console.log('🧹', data.message))
+			.catch(err => console.warn('⚠️ No se pudo iniciar job de limpieza:', err));
+	}, []);
+
 	// Configurar Socket.IO
 	useEffect(() => {
 		const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
@@ -130,8 +138,7 @@ export default function DashboardPage() {
 	const getTableStatus = (table: TableData): TableStatus => {
 		const activeOrders = orders.filter(
 			order => order.tableId === table.id && 
-			order.status !== 'PAGADA' && 
-			order.status !== 'COMPLETADA' &&
+			order.status !== 'PAGADA' &&
 			order.status !== 'CANCELADA'
 		);
 
@@ -145,9 +152,9 @@ export default function DashboardPage() {
 		const hasPreparing = activeOrders.some(o => o.status === 'PREPARANDO' || o.status === 'PENDIENTE');
 		if (hasPreparing) return "preparacion";
 		
-		// Si todas están entregadas, cliente está comiendo
-		const allDelivered = activeOrders.every(o => o.status === 'ENTREGADA');
-		if (allDelivered && activeOrders.length > 0) return "atencion";
+		// Si todas están entregadas o completadas, cliente está comiendo
+		const allDeliveredOrCompleted = activeOrders.every(o => o.status === 'ENTREGADA' || o.status === 'COMPLETADA');
+		if (allDeliveredOrCompleted && activeOrders.length > 0) return "atencion";
 		
 		return "preparacion";
 	};
@@ -155,8 +162,7 @@ export default function DashboardPage() {
 	const getTableOrders = (table: TableData) => {
 		return orders.filter(
 			order => order.tableId === table.id && 
-			order.status !== 'PAGADA' && 
-			order.status !== 'COMPLETADA' &&
+			order.status !== 'PAGADA' &&
 			order.status !== 'CANCELADA'
 		);
 	};
@@ -165,25 +171,23 @@ export default function DashboardPage() {
 		const occupiedTables = tables.filter(t => {
 			const tableOrders = orders.filter(
 				o => o.tableId === t.id && 
-				o.status !== 'PAGADA' && 
-				o.status !== 'COMPLETADA' &&
+				o.status !== 'PAGADA' &&
 				o.status !== 'CANCELADA'
 			);
 			return tableOrders.length > 0;
 		}).length;
 
 		const activeOrders = orders.filter(
-			o => o.status !== 'PAGADA' && 
-			o.status !== 'COMPLETADA' &&
+			o => o.status !== 'PAGADA' &&
 			o.status !== 'CANCELADA'
 		).length;
 
 		const totalRevenue = orders
-			.filter(o => o.status === 'PAGADA' || o.status === 'COMPLETADA')
+			.filter(o => o.status === 'PAGADA')
 			.reduce((sum, o) => sum + o.total, 0);
 
 		const totalTips = orders
-			.filter(o => o.status === 'PAGADA' || o.status === 'COMPLETADA')
+			.filter(o => o.status === 'PAGADA')
 			.reduce((sum, o) => sum + (o.tip || 0), 0);
 
 		return [
@@ -508,12 +512,14 @@ export default function DashboardPage() {
 															order.status === 'PREPARANDO' ? 'bg-blue-500/20 text-blue-300' :
 															order.status === 'LISTA' ? 'bg-green-500/20 text-green-300' :
 															order.status === 'ENTREGADA' ? 'bg-purple-500/20 text-purple-300' :
+															order.status === 'COMPLETADA' ? 'bg-purple-500/20 text-purple-300' :
 															'bg-white/10 text-white/60'
 														}`}>
 															{order.status === 'PENDIENTE' ? 'Pendiente' :
 															 order.status === 'PREPARANDO' ? 'Preparando' :
 															 order.status === 'LISTA' ? 'Listo' :
-															 order.status === 'ENTREGADA' ? 'Entregado' : order.status}
+															 order.status === 'ENTREGADA' ? 'Entregado' : 
+															 order.status === 'COMPLETADA' ? 'Comiendo' : order.status}
 														</span>
 													</div>
 												</div>

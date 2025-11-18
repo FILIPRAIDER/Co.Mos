@@ -10,7 +10,10 @@ const port = parseInt(process.env.PORT || '3000', 10); // Railway asigna PORT di
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-app.prepare().then(() => {
+// Variable global para Socket.IO (accesible desde las APIs)
+global.io = null;
+
+app.prepare().then(async () => {
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
@@ -37,6 +40,9 @@ app.prepare().then(() => {
     transports: ['websocket', 'polling'],
     allowEIO3: true,
   });
+
+  // Hacer io accesible globalmente para las APIs
+  global.io = io;
 
   // Contador de conexiones
   let connectionCount = 0;

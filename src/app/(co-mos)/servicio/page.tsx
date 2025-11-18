@@ -31,6 +31,11 @@ type Order = {
     id: string;
     number: number;
   };
+  session?: {
+    id: string;
+    sessionCode: string;
+    active: boolean;
+  };
 };
 
 type TableWithOrders = {
@@ -66,12 +71,42 @@ export default function ServicioPage() {
   useEffect(() => {
     fetchOrders();
     fetchTables();
-    // Polling cada 5 segundos
-    const interval = setInterval(() => {
+  }, []);
+
+  // Configurar Socket.IO para actualizaciones en tiempo real
+  useEffect(() => {
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+    const { io } = require('socket.io-client');
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+    });
+
+    const handleUpdate = () => {
+      console.log('🔄 Servicio: Actualizando datos en tiempo real...');
       fetchOrders();
       fetchTables();
-    }, 5000);
-    return () => clearInterval(interval);
+    };
+
+    socket.on('connect', () => {
+      console.log('🔌 Servicio conectado a Socket.IO');
+      socket.emit('join:servicio');
+    });
+
+    // Escuchar todos los eventos de actualización
+    socket.on('order:new', handleUpdate);
+    socket.on('order:update', handleUpdate);
+    socket.on('order:statusChange', handleUpdate);
+    socket.on('table:update', handleUpdate);
+    socket.on('session:close', handleUpdate);
+
+    return () => {
+      socket.off('order:new', handleUpdate);
+      socket.off('order:update', handleUpdate);
+      socket.off('order:statusChange', handleUpdate);
+      socket.off('table:update', handleUpdate);
+      socket.off('session:close', handleUpdate);
+      socket.disconnect();
+    };
   }, []);
 
   const fetchOrders = async () => {
@@ -79,9 +114,12 @@ export default function ServicioPage() {
       const response = await fetch("/api/orders");
       if (response.ok) {
         const data = await response.json();
-        // Filtrar solo LISTA y ENTREGADA (recientes)
+        // Filtrar LISTA, ENTREGADA y COMPLETADA (para permitir ver la cuenta)
+        // COMPLETADA es el estado después de ENTREGADA cuando el cliente está comiendo
         const serviceOrders = data.filter((order: Order) => 
-          order.status === "LISTA" || order.status === "ENTREGADA"
+          order.status === "LISTA" || 
+          order.status === "ENTREGADA" || 
+          order.status === "COMPLETADA"
         );
         setOrders(serviceOrders);
       }
@@ -131,7 +169,7 @@ export default function ServicioPage() {
   };
 
   const readyOrders = orders.filter(o => o.status === "LISTA");
-  const deliveredOrders = orders.filter(o => o.status === "ENTREGADA");
+  const deliveredOrders = orders.filter(o => o.status === "ENTREGADA" || o.status === "COMPLETADA");
   const activeTables = tables.filter(t => !t.available && t.sessions.some(s => s.active));
 
   if (status === "loading" || loading) {
@@ -237,7 +275,9 @@ export default function ServicioPage() {
                   className={`rounded-lg border p-4 ${
                     order.status === "LISTA"
                       ? "bg-zinc-900 border-green-500"
-                      : "bg-zinc-900 border-blue-500"
+                      : order.status === "ENTREGADA"
+                      ? "bg-zinc-900 border-blue-500"
+                      : "bg-zinc-900 border-purple-500"
                   }`}
                 >
                   {/* Order Header */}
@@ -249,10 +289,14 @@ export default function ServicioPage() {
                           className={`rounded-lg px-2 py-0.5 text-xs font-medium ${
                             order.status === "LISTA"
                               ? "bg-green-500 text-white"
-                              : "bg-blue-500 text-white"
+                              : order.status === "ENTREGADA"
+                              ? "bg-blue-500 text-white"
+                              : "bg-purple-500 text-white"
                           }`}
                         >
-                          {order.status === "LISTA" ? "✅ Lista" : "🚶 Entregada"}
+                          {order.status === "LISTA" ? "✅ Lista" : 
+                           order.status === "ENTREGADA" ? "🚶 Entregada" : 
+                           "🍽️ Cliente Comiendo"}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -304,6 +348,20 @@ export default function ServicioPage() {
                     >
                       <CheckCircle className="h-4 w-4" />
                       Marcar como entregada
+                    </button>
+                  )}
+                  {(order.status === "ENTREGADA" || order.status === "COMPLETADA") && (
+                    <button
+                      onClick={() => {
+                        // Navegar a la vista de cuenta/factura
+                        const sessionId = order.session?.id;
+                        if (sessionId) {
+                          setSelectedTableForBill(sessionId);
+                        }
+                      }}
+                      className="w-full rounded-lg bg-purple-500 px-4 py-3 font-semibold transition hover:bg-purple-600 flex items-center justify-center gap-2"
+                    >
+                      💳 Ver Cuenta / Pagar
                     </button>
                   )}
                 </div>

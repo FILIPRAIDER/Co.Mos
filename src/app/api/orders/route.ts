@@ -210,6 +210,14 @@ export async function POST(request: NextRequest) {
       
       await cacheDelete(`orders:${restaurant.id}`);
       
+      // Emitir evento Socket.IO para actualizaciones en tiempo real
+      if (global.io) {
+        console.log('📤 Emitiendo evento order:new para:', order.orderNumber);
+        global.io.to('cocina').emit('order:new', order);
+        global.io.to('servicio').emit('order:new', order);
+        global.io.to('admin').emit('order:new', order);
+      }
+      
       return NextResponse.json({ 
         success: true,
         order 
