@@ -5,12 +5,19 @@ import { authOptions } from "@/auth.config";
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.email) {
+  if (!session?.user) {
+    return null;
+  }
+
+  // Buscar por document (siempre presente) en lugar de email (opcional)
+  const document = (session.user as any).document;
+  
+  if (!document) {
     return null;
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { document },
     include: {
       restaurant: true,
     },
