@@ -16,7 +16,11 @@ export async function GET() {
       include: {
         sessions: {
           where: { active: true },
-          include: {
+          select: {
+            id: true,
+            sessionCode: true,
+            active: true,
+            customerName: true,
             orders: {
               select: {
                 id: true,

@@ -44,6 +44,7 @@ type TableWithOrders = {
   available: boolean;
   sessions: Array<{
     id: string;
+    sessionCode: string;
     active: boolean;
     customerName?: string | null;
     orders: Order[];
@@ -121,7 +122,18 @@ export default function ServicioPage() {
           order.status === "ENTREGADA" || 
           order.status === "COMPLETADA"
         );
-        setOrders(serviceOrders);
+        
+        // Agrupar por mesa y tomar solo el pedido más reciente por mesa
+        const ordersByTable = new Map<string, Order>();
+        serviceOrders.forEach((order: Order) => {
+          const tableId = order.table.id;
+          const existing = ordersByTable.get(tableId);
+          if (!existing || new Date(order.createdAt) > new Date(existing.createdAt)) {
+            ordersByTable.set(tableId, order);
+          }
+        });
+        
+        setOrders(Array.from(ordersByTable.values()));
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -353,10 +365,10 @@ export default function ServicioPage() {
                   {(order.status === "ENTREGADA" || order.status === "COMPLETADA") && (
                     <button
                       onClick={() => {
-                        // Navegar a la vista de cuenta/factura
-                        const sessionId = order.session?.id;
-                        if (sessionId) {
-                          setSelectedTableForBill(sessionId);
+                        // Navegar a la vista de cuenta/factura usando sessionCode
+                        const sessionCode = order.session?.sessionCode;
+                        if (sessionCode) {
+                          setSelectedTableForBill(sessionCode);
                         }
                       }}
                       className="w-full rounded-lg bg-purple-500 px-4 py-3 font-semibold transition hover:bg-purple-600 flex items-center justify-center gap-2"
@@ -403,7 +415,7 @@ export default function ServicioPage() {
                         </div>
                         {hasDeliveredOrders && activeSession && (
                           <button
-                            onClick={() => setSelectedTableForBill(activeSession.id)}
+                            onClick={() => setSelectedTableForBill(activeSession.sessionCode || activeSession.id)}
                             className="rounded-lg bg-green-500 hover:bg-green-600 px-3 py-1 text-sm font-medium text-white transition"
                             title="Ver factura"
                           >
@@ -450,19 +462,21 @@ export default function ServicioPage() {
 
       {/* Modal de Factura */}
       {selectedTableForBill && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-end md:items-center justify-center">
-          <div className="bg-neutral-900 w-full max-w-md rounded-t-3xl md:rounded-3xl max-h-[90vh] overflow-y-auto">
-            <iframe
-              src={`/cuenta?session=${selectedTableForBill}&modal=true`}
-              className="w-full h-[90vh] border-0"
-              title="Factura"
-            />
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="relative bg-[#0a0a0f] w-full max-w-lg rounded-2xl max-h-[90vh] overflow-hidden border border-zinc-800 shadow-2xl">
             <button
               onClick={() => setSelectedTableForBill(null)}
-              className="absolute top-4 right-4 rounded-full bg-white/10 p-2 hover:bg-white/20 transition"
+              className="absolute top-4 right-4 z-10 rounded-full bg-zinc-900 border border-zinc-800 p-2 hover:bg-zinc-800 transition"
             >
               <X className="h-5 w-5 text-white" />
             </button>
+            <div className="w-full h-[90vh] overflow-y-auto">
+              <iframe
+                src={`/cuenta?session=${selectedTableForBill}&modal=true`}
+                className="w-full h-full border-0 bg-transparent"
+                title="Factura"
+              />
+            </div>
           </div>
         </div>
       )}
