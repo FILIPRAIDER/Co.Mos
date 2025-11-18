@@ -14,6 +14,15 @@ export async function GET(request: Request) {
       // Si falla, intentar obtener desde el query parameter (para usuarios públicos)
       const { searchParams } = new URL(request.url);
       restaurantId = searchParams.get('restaurantId');
+      
+      // Si tampoco hay query param, usar el primer restaurante disponible
+      if (!restaurantId) {
+        const firstRestaurant = await prisma.restaurant.findFirst();
+        if (firstRestaurant) {
+          console.log('ℹ️ Usando primer restaurante disponible en products:', firstRestaurant.name);
+          restaurantId = firstRestaurant.id;
+        }
+      }
     }
 
     // Si no hay restaurantId, devolver array vacío en lugar de error

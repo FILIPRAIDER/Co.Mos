@@ -246,8 +246,10 @@ export async function GET(request: NextRequest) {
     try {
       const restaurant = await getCurrentRestaurant();
       restaurantId = restaurant.id;
-    } catch {
-      // Si no está autenticado, obtener desde sessionCode o tableId
+    } catch (error) {
+      // Si no está autenticado o no tiene restaurante, obtener desde sessionCode o tableId
+      console.log('🔍 Intentando obtener restaurantId desde query params...');
+      
       if (sessionCode) {
         const session = await prisma.tableSession.findUnique({
           where: { sessionCode },
@@ -262,6 +264,15 @@ export async function GET(request: NextRequest) {
         });
         if (table) {
           restaurantId = table.restaurantId;
+        }
+      }
+      
+      // Si aún no hay restaurantId, intentar obtener el primer restaurante
+      if (!restaurantId) {
+        const firstRestaurant = await prisma.restaurant.findFirst();
+        if (firstRestaurant) {
+          console.log('ℹ️ Usando primer restaurante disponible:', firstRestaurant.name);
+          restaurantId = firstRestaurant.id;
         }
       }
     }

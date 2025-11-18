@@ -7,7 +7,20 @@ import { withRateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
   try {
-    const restaurant = await getCurrentRestaurant();
+    let restaurant;
+    try {
+      restaurant = await getCurrentRestaurant();
+    } catch (error) {
+      // Si el usuario no tiene restaurante asociado, obtener el primer restaurante
+      console.log('🔍 Usuario sin restaurante, obteniendo primer restaurante disponible...');
+      restaurant = await prisma.restaurant.findFirst();
+      if (!restaurant) {
+        return NextResponse.json(
+          { error: 'No hay restaurantes disponibles' },
+          { status: 404 }
+        );
+      }
+    }
 
     const tables = await prisma.table.findMany({
       where: {
