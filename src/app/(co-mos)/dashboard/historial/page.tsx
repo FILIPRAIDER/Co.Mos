@@ -91,7 +91,7 @@ export default function HistorialPage() {
         (order) =>
           order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
           order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          order.table.number.toString().includes(searchQuery)
+          (order.table && order.table.number.toString().includes(searchQuery))
       );
     }
 
@@ -215,7 +215,7 @@ export default function HistorialPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-white/60">
-                      <span>🪑 Mesa {order.table.number}</span>
+                      <span>🪑 {order.table ? `Mesa ${order.table.number}` : 'Para llevar'}</span>
                       <span>•</span>
                       <span>{order.customerName || "Cliente"}</span>
                       <span>•</span>
@@ -314,7 +314,7 @@ export default function HistorialPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-white/60">Mesa</span>
-                  <span className="text-white font-medium">{selectedOrderForInvoice.table.number}</span>
+                  <span className="text-white font-medium">{selectedOrderForInvoice.table ? selectedOrderForInvoice.table.number : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-white/60">Cliente</span>

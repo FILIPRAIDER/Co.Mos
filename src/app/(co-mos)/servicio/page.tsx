@@ -124,10 +124,12 @@ export default function ServicioPage() {
       // Filtrar LISTA, ENTREGADA y COMPLETADA (para permitir ver la cuenta)
       // COMPLETADA es el estado después de ENTREGADA cuando el cliente está comiendo
       // No agrupar - mostrar todas las órdenes para que mesero pueda entregar cada una
+      // Filtrar solo órdenes con mesa (excluir para llevar)
       const serviceOrders = data.filter((order: Order) => 
-        order.status === "LISTA" || 
-        order.status === "ENTREGADA" || 
-        order.status === "COMPLETADA"
+        (order.status === "LISTA" || 
+         order.status === "ENTREGADA" || 
+         order.status === "COMPLETADA") &&
+        order.table !== null // Solo órdenes con mesa
       );
       
       setOrders(serviceOrders);
@@ -310,7 +312,7 @@ export default function ServicioPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <span>🪑 Mesa {order.table.number}</span>
+                        <span>🪑 {order.table ? `Mesa ${order.table.number}` : 'Para llevar'}</span>
                         <span>•</span>
                         <span>{order.customerName || "Cliente"}</span>
                       </div>
