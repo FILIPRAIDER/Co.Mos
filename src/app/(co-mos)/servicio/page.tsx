@@ -117,23 +117,14 @@ export default function ServicioPage() {
         const data = await response.json();
         // Filtrar LISTA, ENTREGADA y COMPLETADA (para permitir ver la cuenta)
         // COMPLETADA es el estado después de ENTREGADA cuando el cliente está comiendo
+        // No agrupar - mostrar todas las órdenes para que mesero pueda entregar cada una
         const serviceOrders = data.filter((order: Order) => 
           order.status === "LISTA" || 
           order.status === "ENTREGADA" || 
           order.status === "COMPLETADA"
         );
         
-        // Agrupar por mesa y tomar solo el pedido más reciente por mesa
-        const ordersByTable = new Map<string, Order>();
-        serviceOrders.forEach((order: Order) => {
-          const tableId = order.table.id;
-          const existing = ordersByTable.get(tableId);
-          if (!existing || new Date(order.createdAt) > new Date(existing.createdAt)) {
-            ordersByTable.set(tableId, order);
-          }
-        });
-        
-        setOrders(Array.from(ordersByTable.values()));
+        setOrders(serviceOrders);
       }
     } catch (error) {
       console.error("Error fetching orders:", error);

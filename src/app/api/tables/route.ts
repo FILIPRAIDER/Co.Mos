@@ -11,15 +11,11 @@ export async function GET() {
     try {
       restaurant = await getCurrentRestaurant();
     } catch (error) {
-      // Si el usuario no tiene restaurante asociado, obtener el primer restaurante
-      console.log('🔍 Usuario sin restaurante, obteniendo primer restaurante disponible...');
-      restaurant = await prisma.restaurant.findFirst();
-      if (!restaurant) {
-        return NextResponse.json(
-          { error: 'No hay restaurantes disponibles' },
-          { status: 404 }
-        );
-      }
+      console.error('⚠️ Usuario no tiene restaurante asignado en GET /api/tables');
+      return NextResponse.json(
+        { error: 'Usuario no tiene restaurante asignado. Contacta al administrador.' },
+        { status: 403 }
+      );
     }
 
     const tables = await prisma.table.findMany({

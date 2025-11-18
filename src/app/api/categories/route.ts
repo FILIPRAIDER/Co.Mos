@@ -14,21 +14,15 @@ export async function GET(request: Request) {
       // Si falla, intentar obtener desde el query parameter (para usuarios públicos)
       const { searchParams } = new URL(request.url);
       restaurantId = searchParams.get('restaurantId');
-      
-      // Si tampoco hay query param, usar el primer restaurante disponible
-      if (!restaurantId) {
-        const firstRestaurant = await prisma.restaurant.findFirst();
-        if (firstRestaurant) {
-          console.log('ℹ️ Usando primer restaurante disponible en categories:', firstRestaurant.name);
-          restaurantId = firstRestaurant.id;
-        }
-      }
     }
 
-    // Si no hay restaurantId, devolver array vacío en lugar de error
+    // Si no hay restaurantId, retornar error apropiado
     if (!restaurantId) {
-      console.log('⚠️ No restaurantId disponible en GET /api/categories');
-      return NextResponse.json([]);
+      console.error('⚠️ No restaurantId disponible en GET /api/categories - Usuario debe tener restaurante asignado');
+      return NextResponse.json(
+        { error: 'Usuario no tiene restaurante asignado. Contacta al administrador.' },
+        { status: 403 }
+      );
     }
     
     const categories = await prisma.category.findMany({

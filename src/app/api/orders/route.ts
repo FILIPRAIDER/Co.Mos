@@ -266,20 +266,14 @@ export async function GET(request: NextRequest) {
           restaurantId = table.restaurantId;
         }
       }
-      
-      // Si aún no hay restaurantId, intentar obtener el primer restaurante
-      if (!restaurantId) {
-        const firstRestaurant = await prisma.restaurant.findFirst();
-        if (firstRestaurant) {
-          console.log('ℹ️ Usando primer restaurante disponible:', firstRestaurant.name);
-          restaurantId = firstRestaurant.id;
-        }
-      }
     }
 
     if (!restaurantId) {
-      console.log('⚠️ No restaurantId disponible en GET /api/orders');
-      return NextResponse.json([]);
+      console.error('⚠️ No restaurantId disponible en GET /api/orders - Usuario debe tener restaurantId configurado');
+      return NextResponse.json(
+        { error: 'Usuario no tiene restaurante asignado. Contacta al administrador.' },
+        { status: 403 }
+      );
     }
 
     const where: any = {
