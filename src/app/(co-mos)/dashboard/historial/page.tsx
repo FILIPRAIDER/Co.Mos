@@ -59,17 +59,24 @@ export default function HistorialPage() {
   const fetchOrders = async () => {
     try {
       const response = await fetch("/api/orders");
-      if (response.ok) {
-        const data = await response.json();
-        // Ordenar por fecha descendente
-        const sortedOrders = data.sort(
-          (a: Order, b: Order) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setOrders(sortedOrders);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+        console.error("❌ Error en /api/orders:", response.status, errorData);
+        throw new Error(errorData.error || `Error HTTP ${response.status}`);
       }
+      
+      const data = await response.json();
+      // Ordenar por fecha descendente
+      const sortedOrders = data.sort(
+        (a: Order, b: Order) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setOrders(sortedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
+      // Lanzar el error para que el ErrorBoundary lo capture
+      throw error;
     } finally {
       setLoading(false);
     }
