@@ -6,6 +6,8 @@
 - ✅ Servidor funcionando correctamente
 - ✅ Socket.IO configurado y activo
 - ✅ Sistema de tiempo real implementado
+- ✅ Bug de duplicados en servicio CORREGIDO (18/11/2025)
+- ✅ Modal de pago funcionando correctamente (18/11/2025)
 
 ---
 
@@ -58,8 +60,10 @@
 3. Cocina prepara → Estado PREPARANDO visible en Dashboard
 4. Cocina marca lista → Aparece en Servicio
 5. Servicio entrega → Botón "Ver Cuenta / Pagar" visible
-6. Cliente ve cuenta y hace reseña
-7. Mesa se libera
+6. ✅ Click en "Ver Cuenta / Pagar" → Se abre modal con la factura
+7. ✅ Verificar que solo aparece UNA vez la mesa (no duplicados)
+8. Cliente ve cuenta y puede hacer reseña
+9. Mesa se libera
 
 ---
 
