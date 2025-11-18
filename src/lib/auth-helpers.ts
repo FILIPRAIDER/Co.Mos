@@ -6,13 +6,18 @@ export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
+    console.error('❌ getCurrentUser: No hay sesión');
     return null;
   }
 
   // Buscar por document (siempre presente) en lugar de email (opcional)
   const document = (session.user as any).document;
   
+  console.log('🔍 getCurrentUser - Document desde sesión:', document);
+  console.log('🔍 getCurrentUser - Session user:', JSON.stringify(session.user));
+  
   if (!document) {
+    console.error('❌ getCurrentUser: No hay document en la sesión');
     return null;
   }
 
@@ -22,6 +27,12 @@ export async function getCurrentUser() {
       restaurant: true,
     },
   });
+  
+  if (user) {
+    console.log('✅ getCurrentUser: Usuario encontrado:', user.name, 'RestaurantId:', user.restaurantId);
+  } else {
+    console.error('❌ getCurrentUser: Usuario NO encontrado para document:', document);
+  }
 
   return user;
 }
